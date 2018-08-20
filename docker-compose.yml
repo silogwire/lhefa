@@ -1,0 +1,30 @@
+version : '3'
+services:
+  dbservice-01:
+    container_name: "dbservice-01"
+    image: stpapp/dbservice
+    extra_hosts:
+          - "host-machine:172.17.0.1"
+    volumes:
+      - /home/mschaedlich/IdeaProjects/DBService/config.json:/app/config.json
+  dbservice-02:
+      container_name: "dbservice-02"
+      image: stpapp/dbservice
+      extra_hosts:
+            - "host-machine:172.17.0.1"
+      volumes:
+        - /home/mschaedlich/IdeaProjects/DBService/config.json:/app/config.json
+  dbservice-03:
+      container_name: "dbservice-03"
+      image: stpapp/dbservice
+      extra_hosts:
+            - "host-machine:172.17.0.1"
+      volumes:
+        - /home/mschaedlich/IdeaProjects/DBService/config.json:/app/config.json
+  dbservice-04:
+      container_name: "dbservice-04"
+      image: stpapp/dbservice
+      extra_hosts:
+            - "host-machine:172.17.0.1"
+      volumes:
+        - /home/mschaedlich/IdeaProjects/DBService/config.json:/app/config.json
