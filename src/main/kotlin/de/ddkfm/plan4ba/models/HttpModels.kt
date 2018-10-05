@@ -1,4 +1,4 @@
-package de.ddkfm.stpapp.models
+package de.ddkfm.plan4ba.models
 
 open class HttpStatus(
         var code : Int,

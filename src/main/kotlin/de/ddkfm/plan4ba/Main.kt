@@ -1,12 +1,14 @@
-package de.ddkfm.stpapp
+package de.ddkfm.plan4ba
 
-import com.google.gson.Gson
-import de.ddkfm.stpapp.controller.SwaggerParser
-import de.ddkfm.stpapp.models.BadRequest
-import de.ddkfm.stpapp.models.Config
-import de.ddkfm.stpapp.models.HttpStatus
-import de.ddkfm.stpapp.utils.HibernateUtils
-import de.ddkfm.stpapp.utils.mapDataTypes
+import com.fasterxml.jackson.databind.ObjectMapper
+import de.ddkfm.plan4ba.controller.SwaggerParser
+import de.ddkfm.plan4ba.models.BadRequest
+import de.ddkfm.plan4ba.models.Config
+import de.ddkfm.plan4ba.models.DatabaseConfig
+import de.ddkfm.plan4ba.models.HttpStatus
+import de.ddkfm.plan4ba.utils.HibernateUtils
+import de.ddkfm.plan4ba.utils.getEnvOrDefault
+import de.ddkfm.plan4ba.utils.mapDataTypes
 import io.swagger.annotations.*
 import org.reflections.Reflections
 import spark.Request
@@ -23,9 +25,11 @@ import javax.ws.rs.*
 fun main(args : Array<String>) {
     port(8080)
 
-    var config = Gson().fromJson<Config>(File("./config.json").readText(), Config::class.java)
+    var config = Config()
+    config.buildFromEnv()
+    println(config)
     HibernateUtils.setUp(config.database)
-    var reflections = Reflections("de.ddkfm.stpapp.controller")
+    var reflections = Reflections("de.ddkfm.plan4ba.controller")
 
     var controllers = reflections.getTypesAnnotatedWith(Api::class.java)
     for(controller in controllers) {
@@ -46,14 +50,18 @@ fun main(args : Array<String>) {
             }
         }
     }
+    if(getEnvOrDefault("ENABLE_SWAGGER", "false").toBoolean()) {
+        var swaggerJson = SwaggerParser.getSwaggerJson("de.ddkfm.plan4ba.controller");
 
-    var swaggerJson = SwaggerParser.getSwaggerJson("de.ddkfm.stpapp.controller");
-    get("/swagger", { req, res ->
-        swaggerJson
-    });
-    get("/swagger/html") {req, resp ->
-        IOUtils.copy(SwaggerParser.javaClass.getResourceAsStream("/index.html"), resp.raw().outputStream)
+        get("/swagger", { req, res ->
+            swaggerJson
+        });
+
+        get("/swagger/html") { req, resp ->
+            IOUtils.copy(SwaggerParser.javaClass.getResourceAsStream("/index.html"), resp.raw().outputStream)
+        }
     }
+
 
     DebugScreen.enableDebugScreen()
 }
@@ -72,7 +80,7 @@ fun invokeFunction(controller : Class<*>, method : Method, req : Request, resp :
             badRequest = true
         }
         try {
-            var bodyObject = Gson().fromJson(req.body(), bodyParam.type)
+            var bodyObject = jacksonObjectMapper().readValue(req.body(), bodyParam.type)
             args.add(bodyObject)
         } catch (e : Exception) {
             badRequest = true
@@ -80,7 +88,7 @@ fun invokeFunction(controller : Class<*>, method : Method, req : Request, resp :
     }
     if(badRequest) {
         resp.status(400)
-        return Gson().toJson(BadRequest())
+        return jacksonObjectMapper().writeValueAsString(BadRequest())
     } else {
         var implicitParams = method.annotations
                 .filter { it is ApiImplicitParams || it is ApiImplicitParam }
@@ -108,6 +116,11 @@ fun invokeFunction(controller : Class<*>, method : Method, req : Request, resp :
         var invokeResult = method.invoke(instance, *args.toTypedArray())
         if (invokeResult is HttpStatus)
             resp.status(invokeResult.code)
-        return Gson().toJson(invokeResult)
+        return jacksonObjectMapper().writeValueAsString(invokeResult)
     }
+}
+
+fun jacksonObjectMapper()  : ObjectMapper {
+    var mapper = com.fasterxml.jackson.module.kotlin.jacksonObjectMapper()
+    return mapper
 }

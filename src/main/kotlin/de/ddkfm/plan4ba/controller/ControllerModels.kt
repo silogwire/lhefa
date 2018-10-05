@@ -1,4 +1,4 @@
-package de.ddkfm.stpapp.controller
+package de.ddkfm.plan4ba.controller
 
 import spark.Request
 import spark.Response

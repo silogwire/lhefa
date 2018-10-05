@@ -1,8 +1,8 @@
-package de.ddkfm.stpapp.utils
+package de.ddkfm.plan4ba.utils
 
-import de.ddkfm.stpapp.models.Config
-import de.ddkfm.stpapp.models.DatabaseConfig
-import de.ddkfm.stpapp.models.User
+import de.ddkfm.plan4ba.models.DatabaseConfig
+import de.ddkfm.plan4ba.models.UserGroup
+import de.ddkfm.plan4ba.models.User
 import org.hibernate.Session
 import org.hibernate.SessionFactory
 import org.hibernate.cfg.Configuration
@@ -15,13 +15,15 @@ class HibernateUtils {
 
         fun setUp(config : DatabaseConfig) {
             var configuration = Configuration()
-            configuration.setProperty(Environment.DRIVER, "com.mysql.jdbc.Driver")
-            configuration.setProperty(Environment.URL, "jdbc:mysql://${config.host}:${config.port}/${config.database}?useSSL=true")
+            configuration.setProperty(Environment.DRIVER, config.type.type)
+            configuration.setProperty(Environment.URL, "jdbc:mysql://${config.host}:${config.port}/${config.database}")
             configuration.setProperty(Environment.USER, config.username)
             configuration.setProperty(Environment.PASS, config.password)
-            configuration.setProperty(Environment.HBM2DDL_AUTO, "update")
-            configuration.setProperty(Environment.SHOW_SQL, "true")
 
+            configuration.setProperty(Environment.HBM2DDL_AUTO, "update")
+            configuration.setProperty(Environment.SHOW_SQL, getEnvOrDefault("SHOW_SQL", "false"))
+
+            configuration.addAnnotatedClass(UserGroup::class.java)
             configuration.addAnnotatedClass(User::class.java)
 
             try {

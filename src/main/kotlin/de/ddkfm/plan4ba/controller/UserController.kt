@@ -1,8 +1,7 @@
-package de.ddkfm.stpapp.controller
+package de.ddkfm.plan4ba.controller
 
-import de.ddkfm.stpapp.models.*
-import de.ddkfm.stpapp.utils.HibernateUtils
-import de.ddkfm.stpapp.utils.doInTransaction
+import de.ddkfm.plan4ba.models.*
+import de.ddkfm.plan4ba.utils.HibernateUtils
 import io.swagger.annotations.*
 import org.apache.commons.codec.digest.DigestUtils
 import spark.Request
@@ -21,7 +20,9 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
     )
     @Path("")
     fun allUsers() : Any? = HibernateUtils.doInHibernate { session ->
-        session.createQuery("From User", User::class.java).list()
+        session.createQuery("From User", User::class.java)
+                .list()
+                .map { it.withoutPassword() }
     }
 
     @GET

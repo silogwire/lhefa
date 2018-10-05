@@ -1,4 +1,4 @@
-package de.ddkfm.stpapp.controller
+package de.ddkfm.plan4ba.controller
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -14,7 +14,7 @@ import org.reflections.Reflections
         info = Info(description = "DBService API",
                 version = "V1.0",
                 title = "API for accessing the DB",
-                contact = Contact(name = "DDKFM", url = "https://github.com/DDKFM") ),
+                contact = Contact(name = "DDKFM", url = "https://github.com/Plan4BA") ),
         schemes = arrayOf(SwaggerDefinition.Scheme.HTTP, SwaggerDefinition.Scheme.HTTPS),
         produces = arrayOf("application/json")
 )
