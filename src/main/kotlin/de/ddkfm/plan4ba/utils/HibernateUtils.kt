@@ -1,8 +1,6 @@
 package de.ddkfm.plan4ba.utils
 
-import de.ddkfm.plan4ba.models.DatabaseConfig
-import de.ddkfm.plan4ba.models.UserGroup
-import de.ddkfm.plan4ba.models.User
+import de.ddkfm.plan4ba.models.*
 import org.hibernate.Session
 import org.hibernate.SessionFactory
 import org.hibernate.cfg.Configuration
@@ -16,15 +14,16 @@ class HibernateUtils {
         fun setUp(config : DatabaseConfig) {
             var configuration = Configuration()
             configuration.setProperty(Environment.DRIVER, config.type.type)
-            configuration.setProperty(Environment.URL, "jdbc:mysql://${config.host}:${config.port}/${config.database}")
+            configuration.setProperty(Environment.URL, "jdbc:${config.type.toJDBCType()}://${config.host}:${config.port}/${config.database}")
             configuration.setProperty(Environment.USER, config.username)
             configuration.setProperty(Environment.PASS, config.password)
 
             configuration.setProperty(Environment.HBM2DDL_AUTO, "update")
             configuration.setProperty(Environment.SHOW_SQL, getEnvOrDefault("SHOW_SQL", "false"))
 
-            configuration.addAnnotatedClass(UserGroup::class.java)
-            configuration.addAnnotatedClass(User::class.java)
+            configuration.addAnnotatedClass(HibernateUniversity::class.java)
+            configuration.addAnnotatedClass(HibernateUserGroup::class.java)
+            configuration.addAnnotatedClass(HibernateUser::class.java)
 
             try {
                 sessionFactory = configuration.buildSessionFactory()
@@ -34,7 +33,7 @@ class HibernateUtils {
 
         }
 
-        fun doInHibernate(func : (session : Session) -> Any) : Any? {
+        fun <T> doInHibernate(func : (session : Session) -> T) : T? {
             var session = sessionFactory?.openSession()
             try {
                 if(session != null) {
@@ -67,8 +66,8 @@ fun Session.doInTransaction(func : (session : Session) -> Any?) : Any?{
     try {
         return func.invoke(this)
     } catch (e : Exception) {
-        e.printStackTrace()
         transaction.rollback()
+        throw e
     } finally {
         transaction.commit()
     }

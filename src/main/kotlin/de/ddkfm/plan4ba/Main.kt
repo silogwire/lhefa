@@ -10,6 +10,11 @@ import de.ddkfm.plan4ba.utils.HibernateUtils
 import de.ddkfm.plan4ba.utils.getEnvOrDefault
 import de.ddkfm.plan4ba.utils.mapDataTypes
 import io.swagger.annotations.*
+import io.swagger.converter.ModelConverter
+import io.swagger.converter.ModelConverterContext
+import io.swagger.converter.ModelConverters
+import io.swagger.models.Model
+import io.swagger.models.properties.Property
 import org.reflections.Reflections
 import spark.Request
 import spark.Response
@@ -19,8 +24,8 @@ import spark.kotlin.port
 import spark.utils.IOUtils
 import java.io.File
 import java.lang.reflect.Method
+import java.lang.reflect.Type
 import javax.ws.rs.*
-
 
 fun main(args : Array<String>) {
     port(8080)

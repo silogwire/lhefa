@@ -1,7 +1,7 @@
 package de.ddkfm.plan4ba.controller
 
 import de.ddkfm.plan4ba.models.*
-import de.ddkfm.plan4ba.utils.HibernateUtils
+import de.ddkfm.plan4ba.utils.*
 import io.swagger.annotations.*
 import org.apache.commons.codec.digest.DigestUtils
 import spark.Request
@@ -20,9 +20,10 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
     )
     @Path("")
     fun allUsers() : Any? = HibernateUtils.doInHibernate { session ->
-        session.createQuery("From User", User::class.java)
+        val users = session.createQuery("From HibernateUser", HibernateUser::class.java)
                 .list()
-                .map { it.withoutPassword() }
+                .map { it.withoutPassword().toUser() }
+        users
     }
 
     @GET
@@ -35,8 +36,8 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
     @Path("/:id")
     fun getUser(@ApiParam(hidden = true) id : Int) : Any? {
         return HibernateUtils.doInHibernate { session ->
-            var user = session.find(User::class.java, id)
-            user?.withoutPassword() ?: NotFound()
+            var user = session.find(HibernateUser::class.java, id)
+            user?.withoutPassword()?.toUser() ?: NotFound()
         }
     }
 
@@ -54,11 +55,11 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
     fun authenticate(@ApiParam passwordParam : PasswordParam,
                      @ApiParam(hidden = true) id : Int) : Any? {
         return HibernateUtils.doInHibernate { session ->
-            var user = session.find(User::class.java, id)
+            var user = session.find(HibernateUser::class.java, id)
             if(user == null)
                 NotFound()
             else if(user.password == DigestUtils.sha512Hex(passwordParam.password))
-                    user.withoutPassword()
+                    user.withoutPassword().toUser()
             else
                Unauthorized()
         }
@@ -75,17 +76,18 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
     )
     fun createUser(@ApiParam user : User) : Any? {
         return HibernateUtils.doInHibernate { session ->
-            var alreadyUsers = session.createQuery("From User Where matriculationNumber = '${user.matriculationNumber}' " +
-                    "OR username = '${user.username}'", User::class.java)
+            var alreadyUsers = session.createQuery("From HibernateUser Where matriculationNumber = '${user.matriculationNumber}'", HibernateUser::class.java)
                     .list()
+
             if(alreadyUsers.size > 0)
                 AlreadyExists("User already exists")
             else {
                 session.beginTransaction()
                 try {
-                    session.persist(user.generatePasswordHash().cleanID())
+
+                    session.persist(user.toHibernateUser().generatePasswordHash().cleanID())
                     session.transaction.commit()
-                    Created(customMessage = "User created")
+                    user
                 } catch (e : Exception) {
                     e.printStackTrace()
                     session.transaction.rollback()
@@ -95,4 +97,40 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
         }
     }
 
+    @POST
+    @ApiOperation(value = "updates an user")
+    @Path("/:id")
+    @ApiImplicitParams(
+            ApiImplicitParam(name = "id", paramType = "path", dataType = "integer")
+    )
+    @ApiResponses(
+            ApiResponse(code = 200, message = "User updated", response = User::class),
+            ApiResponse(code = 500, message = "Could not edit the user", response = HttpStatus::class)
+    )
+    fun updateUser(@ApiParam user : User,
+                   @ApiParam(hidden = true) id : Int) : Any? {
+        return HibernateUtils.doInHibernate { session ->
+            val existingUser = session.find(HibernateUser::class.java, id)
+            if(existingUser == null)
+                NotFound("User does not exist")
+            existingUser.matriculationNumber = user.matriculationNumber
+            existingUser.userHash = user.userHash
+            existingUser.lastLogin = (user.lastLogin ?: 0L).toLocalDateTime()
+
+            if(existingUser.group.id != user.groupId && user.groupId > 0) {
+                val group = session.find(HibernateUserGroup::class.java, user.groupId)
+                if(group == null)
+                    BadRequest("Group with id ${user.id} does not exist")
+            }
+            try {
+                session.doInTransaction {
+                    it.persist(existingUser)
+                }
+                existingUser.toUser()
+            } catch (e : Exception) {
+                e.printStackTrace()
+                HttpStatus(500, "Could not update the User")
+            }
+        }
+    }
 }
