@@ -25,6 +25,12 @@ data class HibernateUser (
         @OneToOne
         var group : HibernateUserGroup,
 
+        @Column
+        var storeHash : Boolean,
+
+        @Column
+        var hasUserSpecificCalendar : Boolean,
+
         @Column(nullable = true)
         var lastLogin : LocalDateTime?
 ) {
@@ -57,15 +63,16 @@ data class HibernateUniversity(
 )
 
 @Entity
-data class Lecture(
+@Table(name = "[Lecture]")
+data class HibernateLecture(
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         var id : Int,
         @Column
         var title : String,
-        @Column
+        @Column(name = "[start]")
         var start : Long,
-        @Column
+        @Column(name = "[end]")
         var end : Long,
         @Column
         var allDay : Boolean,
@@ -80,6 +87,13 @@ data class Lecture(
         @Column
         var instructor : String,
         @Column
-        var remarks : String
+        var remarks : String,
+        @Column
+        var exam : Boolean,
+        @OneToOne
+        var user : HibernateUser?,
+        @OneToOne
+        var group : HibernateUserGroup?
 )
+
 

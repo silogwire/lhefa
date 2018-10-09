@@ -31,7 +31,9 @@ fun HibernateUser.toUser() : User {
             lastLogin = this.lastLogin?.toMillis() ?: 0,
             userHash = this.userHash,
             password = this.password,
-            groupId = this.group.id
+            groupId = this.group.id,
+            hasUserSpecificCalendar = this.hasUserSpecificCalendar,
+            storeUserHash = this.storeHash
     )
 }
 
@@ -50,20 +52,41 @@ fun HibernateUniversity.toUniversity() : University {
     )
 }
 
+fun HibernateLecture.toLecture() : Lecture {
+    return Lecture(
+            id = this.id,
+            title = this.title,
+            sroom = this.sroom,
+            room = this.room,
+            remarks = this.remarks,
+            exam = this.exam,
+            instructor = this.instructor,
+            end = this.end,
+            description = this.description,
+            color = this.color,
+            allDay = this.allDay,
+            groupId = this.group?.id ?: 0,
+            userId = this.user?.id ?: 0,
+            start = this.start
+    )
+}
+
 fun User.toHibernateUser() : HibernateUser {
     return HibernateUser(
-            id = 0,
+            id = this.id,
             password = this.password,
             userHash = this.userHash,
             lastLogin = this.lastLogin?.toLocalDateTime(),
             matriculationNumber = this.matriculationNumber,
-            group = HibernateUserGroup(this.groupId, "", HibernateUniversity(0, ""))
+            group = HibernateUserGroup(this.groupId, "", HibernateUniversity(0, "")),
+            hasUserSpecificCalendar = this.hasUserSpecificCalendar,
+            storeHash = this.storeUserHash
     )
 }
 
 fun UserGroup.toHibernateUserGroup() : HibernateUserGroup {
     return HibernateUserGroup(
-            id = 0,
+            id = this.id,
             uid = this.uid,
             university = HibernateUniversity(
                     id = 0,
@@ -72,6 +95,32 @@ fun UserGroup.toHibernateUserGroup() : HibernateUserGroup {
     )
 }
 
+fun Lecture.toHibernateLecture() : HibernateLecture {
+    return HibernateLecture(
+            id = this.id,
+            allDay = this.allDay,
+            color = this.color,
+            description = this.description,
+            start = this.start,
+            end = this.end,
+            instructor = this.instructor,
+            exam = this.exam,
+            remarks = this.remarks,
+            room = this.room,
+            sroom = this.sroom,
+            title = this.title,
+            user = if(this.userId != null )
+                    HibernateUser(this.userId!!, "", "", "", HibernateUserGroup(0, "", HibernateUniversity(0, "")),
+                            storeHash = false, hasUserSpecificCalendar = false, lastLogin = 0L.toLocalDateTime())
+                else
+                    null,
+            group = if(this.groupId != null)
+                        HibernateUserGroup(this.groupId!!, "", HibernateUniversity(0, ""))
+                    else
+                        null
+
+    )
+}
 
 fun Long.toLocalDateTime() : LocalDateTime {
     val dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(this),

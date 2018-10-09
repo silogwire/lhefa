@@ -27,6 +27,28 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
     }
 
     @GET
+    @ApiOperation(value = "list all users by a given filter", notes = "return filtered users")
+    @ApiResponses(
+            ApiResponse(code = 200, message = "successfull", response = User::class, responseContainer = "List")
+    )
+    @ApiImplicitParams(
+            ApiImplicitParam(name = "field", paramType = "path", dataType = "string"),
+            ApiImplicitParam(name = "operation", paramType = "path", dataType = "string"),
+            ApiImplicitParam(name = "value", paramType = "path", dataType = "string")
+    )
+    @Path("/:field/:operation/:value")
+    fun filteredUsers(@ApiParam(hidden = true) field : String,
+                      @ApiParam(hidden = true) operation : String,
+                      @ApiParam(hidden = true) value : String) : Any? {
+        return HibernateUtils.doInHibernate {session ->
+            val users = session.createQuery("From HibernateUser", HibernateUser::class.java)
+                    .list()
+                    .map { it.withoutPassword().toUser() }
+            users
+        }
+    }
+
+    @GET
     @ApiOperation(value = "get a specific user", notes = "get a specific user")
     @ApiImplicitParam(name = "id", paramType = "path", dataType = "integer")
     @ApiResponses(
@@ -116,6 +138,8 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
             existingUser.matriculationNumber = user.matriculationNumber
             existingUser.userHash = user.userHash
             existingUser.lastLogin = (user.lastLogin ?: 0L).toLocalDateTime()
+            existingUser.userHash = user.userHash
+            existingUser.hasUserSpecificCalendar = user.hasUserSpecificCalendar
 
             if(existingUser.group.id != user.groupId && user.groupId > 0) {
                 val group = session.find(HibernateUserGroup::class.java, user.groupId)

@@ -24,6 +24,7 @@ class HibernateUtils {
             configuration.addAnnotatedClass(HibernateUniversity::class.java)
             configuration.addAnnotatedClass(HibernateUserGroup::class.java)
             configuration.addAnnotatedClass(HibernateUser::class.java)
+            configuration.addAnnotatedClass(HibernateLecture::class.java)
 
             try {
                 sessionFactory = configuration.buildSessionFactory()
