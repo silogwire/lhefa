@@ -17,9 +17,13 @@ class UserGroupController(req : Request, resp : Response) : ControllerInterface(
     @ApiResponses(
             ApiResponse(code = 200, message = "successfull", response = UserGroup::class, responseContainer = "List")
     )
+    @ApiImplicitParam(name = "uid", paramType = "query", required = false)
     @Path("")
-    fun allGroups() : Any? = HibernateUtils.doInHibernate { session ->
-        val groups = session.createQuery("From HibernateUserGroup", HibernateUserGroup::class.java)
+    fun allGroups(@ApiParam(hidden = true) uid : String) : Any? = HibernateUtils.doInHibernate { session ->
+        var where = "WHERE 1=1"
+        if(!uid.isEmpty())
+            where += "AND uid = '$uid'"
+        val groups = session.createQuery("From HibernateUserGroup $where", HibernateUserGroup::class.java)
                 .list()
                 .map { it.toUserGroup() }
         groups
@@ -86,16 +90,14 @@ class UserGroupController(req : Request, resp : Response) : ControllerInterface(
     )
     fun updateGroup(@ApiParam group : UserGroup,
                    @ApiParam(hidden = true) id : Int) : Any? {
-        return HibernateUtils.doInHibernate { session ->
+        return HibernateUtils.doInHibernate returnValue@{ session ->
             val existingGroup = session.find(HibernateUserGroup::class.java, id)
-            if(existingGroup == null)
-                NotFound("Group does not exist")
+                    ?: return@returnValue NotFound("Group does not exist")
 
             existingGroup.uid = group.uid
             if(group.universityId != existingGroup.university.id && group.universityId > 0) {
                 val university = session.find(HibernateUniversity::class.java, group.universityId)
-                if(university == null)
-                     BadRequest("University with id ${group.universityId} does not exist")
+                        ?: return@returnValue BadRequest("University with id ${group.universityId} does not exist")
                 existingGroup.university = university
             }
 

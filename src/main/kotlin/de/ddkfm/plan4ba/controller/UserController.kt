@@ -18,34 +18,15 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
     @ApiResponses(
             ApiResponse(code = 200, message = "successfull", response = User::class, responseContainer = "List")
     )
+    @ApiImplicitParam(name = "matriculationNumber", paramType = "query", required = false)
     @Path("")
-    fun allUsers() : Any? = HibernateUtils.doInHibernate { session ->
-        val users = session.createQuery("From HibernateUser", HibernateUser::class.java)
+    fun allUsers(@ApiParam(hidden = true) matriculationNumber : String) : Any? = HibernateUtils.doInHibernate { session ->
+        var where = "WHERE 1=1"
+        if(!matriculationNumber.isEmpty())
+            where += "AND matriculationNumber = '$matriculationNumber'"
+        session.createQuery("From HibernateUser $where", HibernateUser::class.java)
                 .list()
                 .map { it.withoutPassword().toUser() }
-        users
-    }
-
-    @GET
-    @ApiOperation(value = "list all users by a given filter", notes = "return filtered users")
-    @ApiResponses(
-            ApiResponse(code = 200, message = "successfull", response = User::class, responseContainer = "List")
-    )
-    @ApiImplicitParams(
-            ApiImplicitParam(name = "field", paramType = "path", dataType = "string"),
-            ApiImplicitParam(name = "operation", paramType = "path", dataType = "string"),
-            ApiImplicitParam(name = "value", paramType = "path", dataType = "string")
-    )
-    @Path("/:field/:operation/:value")
-    fun filteredUsers(@ApiParam(hidden = true) field : String,
-                      @ApiParam(hidden = true) operation : String,
-                      @ApiParam(hidden = true) value : String) : Any? {
-        return HibernateUtils.doInHibernate {session ->
-            val users = session.createQuery("From HibernateUser", HibernateUser::class.java)
-                    .list()
-                    .map { it.withoutPassword().toUser() }
-            users
-        }
     }
 
     @GET
@@ -71,19 +52,18 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
     )
     @ApiResponses(
             ApiResponse(code = 200, message = "login successfull", response = User::class),
-            ApiResponse(code = 401, response = Unauthorized::class, message = "UNAUTHORIZED"),
+            ApiResponse(code = 401, response = Unauthorized::class, message = "Unauthorized"),
             ApiResponse(code = 404, response = NotFound::class, message = "Not Found")
     )
     fun authenticate(@ApiParam passwordParam : PasswordParam,
                      @ApiParam(hidden = true) id : Int) : Any? {
         return HibernateUtils.doInHibernate { session ->
             var user = session.find(HibernateUser::class.java, id)
-            if(user == null)
-                NotFound()
-            else if(user.password == DigestUtils.sha512Hex(passwordParam.password))
-                    user.withoutPassword().toUser()
-            else
-               Unauthorized()
+            when {
+                user == null -> NotFound()
+                user.password == DigestUtils.sha512Hex(passwordParam.password) -> user.withoutPassword().toUser()
+                else -> Unauthorized()
+            }
         }
     }
 
@@ -94,7 +74,7 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
     @ApiResponses(
             ApiResponse(code = 201, message = "User created", response = User::class),
             ApiResponse(code = 409, message = "User already exists", response = AlreadyExists::class),
-            ApiResponse(code = 500, message = "Could not save the user", response = HttpStatus::class)
+            ApiResponse(code = 500, message = "Could not save the user", response = InternalServerError::class)
     )
     fun createUser(@ApiParam user : User) : Any? {
         return HibernateUtils.doInHibernate { session ->
@@ -109,11 +89,12 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
 
                     session.persist(user.toHibernateUser().generatePasswordHash().cleanID())
                     session.transaction.commit()
-                    user
+                    session.createQuery("From HibernateUser Where matriculationNumber = '${user.matriculationNumber}'", HibernateUser::class.java).list()
+                            .first().toUser()
                 } catch (e : Exception) {
                     e.printStackTrace()
                     session.transaction.rollback()
-                    HttpStatus(500, "Could not save the user")
+                    InternalServerError("Could not save the user")
                 }
             }
         }
@@ -127,24 +108,26 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
     )
     @ApiResponses(
             ApiResponse(code = 200, message = "User updated", response = User::class),
-            ApiResponse(code = 500, message = "Could not edit the user", response = HttpStatus::class)
+            ApiResponse(code = 400, message = "Group with id {integer} does not exist", response = BadRequest::class),
+            ApiResponse(code = 404, message = "User does not exist", response = NotFound::class),
+            ApiResponse(code = 500, message = "Could not update the user", response = InternalServerError::class)
     )
     fun updateUser(@ApiParam user : User,
                    @ApiParam(hidden = true) id : Int) : Any? {
-        return HibernateUtils.doInHibernate { session ->
+        return HibernateUtils.doInHibernate returnValue@{ session ->
             val existingUser = session.find(HibernateUser::class.java, id)
-            if(existingUser == null)
-                NotFound("User does not exist")
+                    ?: return@returnValue NotFound("User does not exist")
+
             existingUser.matriculationNumber = user.matriculationNumber
             existingUser.userHash = user.userHash
-            existingUser.lastLogin = (user.lastLogin ?: 0L).toLocalDateTime()
             existingUser.userHash = user.userHash
-            existingUser.hasUserSpecificCalendar = user.hasUserSpecificCalendar
+            existingUser.password = DigestUtils.sha512Hex(user.password)
+            existingUser.lastLectureCall = user.lastLectureCall
+            existingUser.lastLecturePolling = user.lastLecturePolling
 
             if(existingUser.group.id != user.groupId && user.groupId > 0) {
                 val group = session.find(HibernateUserGroup::class.java, user.groupId)
-                if(group == null)
-                    BadRequest("Group with id ${user.id} does not exist")
+                        ?: return@returnValue BadRequest("Group with id ${user.id} does not exist")
             }
             try {
                 session.doInTransaction {
@@ -153,7 +136,7 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
                 existingUser.toUser()
             } catch (e : Exception) {
                 e.printStackTrace()
-                HttpStatus(500, "Could not update the User")
+                InternalServerError("Could not update the User")
             }
         }
     }

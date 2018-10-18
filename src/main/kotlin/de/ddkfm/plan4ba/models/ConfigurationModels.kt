@@ -11,7 +11,7 @@ enum class DatabaseType(val type : String) {
     }
 }
 data class DatabaseConfig(
-        var host : String = "localhost",
+        var host : String = "172.17.0.1",
         var port : Int = 5432,
         var database : String = "dbservice",
         var username : String = "dbservice",

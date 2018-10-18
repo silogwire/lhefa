@@ -17,9 +17,13 @@ class LectureController(req : Request, resp : Response) : ControllerInterface(re
     @ApiResponses(
             ApiResponse(code = 200, message = "successfull", response = Lecture::class, responseContainer = "List")
     )
+    @ApiImplicitParam(name = "userId", paramType = "query", dataType = "integer", required = false)
     @Path("")
-    fun allLectures() : Any? = HibernateUtils.doInHibernate { session ->
-        val lectures = session.createQuery("From HibernateLecture", HibernateLecture::class.java)
+    fun allLectures(@ApiParam(hidden = true) userId : Int) : Any? = HibernateUtils.doInHibernate { session ->
+        var where = "WHERE 1=1"
+        if(userId != -1)
+            where += "AND user_id = $userId"
+        val lectures = session.createQuery("From HibernateLecture $where", HibernateLecture::class.java)
                 .list()
                 .map { it.toLecture() }
         lectures
@@ -52,9 +56,6 @@ class LectureController(req : Request, resp : Response) : ControllerInterface(re
         return HibernateUtils.doInHibernate { session ->
             var groupSQL = ""
             var userSQL = ""
-            if(lecture.groupId != null && lecture.groupId!! > 0) {
-                groupSQL = "AND group_id = ${lecture.groupId}"
-            }
             if(lecture.userId != null && lecture.userId!! > 0) {
                 val user = session.find(HibernateUser::class.java, lecture.userId)
                 if(user != null) {
@@ -114,11 +115,6 @@ class LectureController(req : Request, resp : Response) : ControllerInterface(re
             existingLecture.room = lecture.room
             existingLecture.sroom = lecture.sroom
             existingLecture.title = lecture.title
-            if(lecture.groupId != null || lecture.groupId!! > 0) {
-                //Update Lecture to group-specific
-                val group = session.find(HibernateUserGroup::class.java, lecture.groupId)
-                existingLecture.group = group
-            }
             if(lecture.userId != null || lecture.userId!! > 0) {
                 val user = session.find(HibernateUser::class.java, lecture.userId)
                 existingLecture.user = user

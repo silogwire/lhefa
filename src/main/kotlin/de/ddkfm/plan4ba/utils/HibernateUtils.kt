@@ -5,6 +5,7 @@ import org.hibernate.Session
 import org.hibernate.SessionFactory
 import org.hibernate.cfg.Configuration
 import org.hibernate.cfg.Environment
+import java.util.stream.Collectors
 
 
 class HibernateUtils {
@@ -25,6 +26,7 @@ class HibernateUtils {
             configuration.addAnnotatedClass(HibernateUserGroup::class.java)
             configuration.addAnnotatedClass(HibernateUser::class.java)
             configuration.addAnnotatedClass(HibernateLecture::class.java)
+            configuration.addAnnotatedClass(HibernateToken::class.java)
 
             try {
                 sessionFactory = configuration.buildSessionFactory()

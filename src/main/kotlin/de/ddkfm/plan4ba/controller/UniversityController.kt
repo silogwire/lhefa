@@ -1,10 +1,15 @@
 package de.ddkfm.plan4ba.controller
 
+import de.ddkfm.plan4ba.hardcoded.UniversityData
 import de.ddkfm.plan4ba.models.*
-import de.ddkfm.plan4ba.utils.*
+import de.ddkfm.plan4ba.utils.HibernateUtils
+import de.ddkfm.plan4ba.utils.doInTransaction
+import de.ddkfm.plan4ba.utils.toMillis
 import io.swagger.annotations.*
 import spark.Request
 import spark.Response
+import java.time.DayOfWeek
+import java.time.LocalDate
 import javax.ws.rs.*
 
 @Api(value = "/universities", description = "all operations about universities")
@@ -17,12 +22,41 @@ class UniversityController(req : Request, resp : Response) : ControllerInterface
     @ApiResponses(
             ApiResponse(code = 200, message = "successfull", response = University::class, responseContainer = "List")
     )
+    @ApiImplicitParam(name = "name", paramType = "query")
     @Path("")
-    fun allUniversities() : Any? = HibernateUtils.doInHibernate { session ->
-        val univeristies = session.createQuery("From HibernateUniversity", HibernateUniversity::class.java)
+    fun allUniversities(@ApiParam(hidden = true) name : String) : Any? = HibernateUtils.doInHibernate { session ->
+        var where = "WHERE 1=1"
+        if(!name.isEmpty())
+            where += "AND name = '$name'"
+
+        val univeristies = session.createQuery("From HibernateUniversity $where", HibernateUniversity::class.java)
                 .list()
                 .map { it.toUniversity() }
         univeristies
+    }
+
+    @GET
+    @ApiOperation(value = "list all meals for current week", notes = "return all meals for current week")
+    @ApiResponses(
+            ApiResponse(code = 200, message = "successfull", response = Meal::class, responseContainer = "List"),
+            ApiResponse(code = 404, response = NotFound::class, message = "University Not Found")
+    )
+    @ApiImplicitParam(name = "id", paramType = "path", dataType = "integer")
+    @Path("/:id/meals")
+    fun getMealsFromUniversity(@ApiParam(hidden = true) id : Int) : Any? = HibernateUtils.doInHibernate { session ->
+        val university = getUniversity(id)
+        if(university is University) {
+            var currentDay = LocalDate.now()
+            val mealEntries = mutableListOf<Meal>()
+            while (currentDay.dayOfWeek < DayOfWeek.SATURDAY) {
+                mealEntries.add(Meal(
+                        universityId = university.id,
+                        day = currentDay.toMillis(),
+                        meals = UniversityData.getInstance(university.name).getMeals(currentDay)))
+                currentDay = currentDay.plusDays(1)
+            }
+            mealEntries
+        } else NotFound("university not found")
     }
 
     @GET
@@ -102,3 +136,4 @@ class UniversityController(req : Request, resp : Response) : ControllerInterface
         }
     }
 }
+

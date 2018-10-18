@@ -4,27 +4,20 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import de.ddkfm.plan4ba.controller.SwaggerParser
 import de.ddkfm.plan4ba.models.BadRequest
 import de.ddkfm.plan4ba.models.Config
-import de.ddkfm.plan4ba.models.DatabaseConfig
 import de.ddkfm.plan4ba.models.HttpStatus
+import de.ddkfm.plan4ba.models.InternalServerError
 import de.ddkfm.plan4ba.utils.HibernateUtils
 import de.ddkfm.plan4ba.utils.getEnvOrDefault
 import de.ddkfm.plan4ba.utils.mapDataTypes
 import io.swagger.annotations.*
-import io.swagger.converter.ModelConverter
-import io.swagger.converter.ModelConverterContext
-import io.swagger.converter.ModelConverters
-import io.swagger.models.Model
-import io.swagger.models.properties.Property
+import org.apache.commons.io.IOUtils
 import org.reflections.Reflections
 import spark.Request
 import spark.Response
 import spark.Spark.*
 import spark.debug.DebugScreen
 import spark.kotlin.port
-import spark.utils.IOUtils
-import java.io.File
 import java.lang.reflect.Method
-import java.lang.reflect.Type
 import javax.ws.rs.*
 
 fun main(args : Array<String>) {
@@ -55,19 +48,15 @@ fun main(args : Array<String>) {
             }
         }
     }
-    if(getEnvOrDefault("ENABLE_SWAGGER", "false").toBoolean()) {
+    if(getEnvOrDefault("ENABLE_SWAGGER", "true").toBoolean()) {
         var swaggerJson = SwaggerParser.getSwaggerJson("de.ddkfm.plan4ba.controller");
 
-        get("/swagger", { req, res ->
-            swaggerJson
-        });
+        get("/swagger") { _,_-> swaggerJson }
 
-        get("/swagger/html") { req, resp ->
+        get("/swagger/html") { _, resp ->
             IOUtils.copy(SwaggerParser.javaClass.getResourceAsStream("/index.html"), resp.raw().outputStream)
         }
     }
-
-
     DebugScreen.enableDebugScreen()
 }
 
@@ -101,7 +90,7 @@ fun invokeFunction(controller : Class<*>, method : Method, req : Request, resp :
                     if (it is ApiImplicitParams)
                         it.value.toList()
                     else
-                        listOf(it)
+                            listOf(it)
                 }
                 .map { it as ApiImplicitParam }
                 .map { param ->
@@ -110,15 +99,20 @@ fun invokeFunction(controller : Class<*>, method : Method, req : Request, resp :
                                 req.params(param.name)
                             } else {
                                 req.queryParams(param.name)
-                            }
+                            } ?: ""
                     param to value
                 }
                 .filter { it.second != null }
                 .map(::mapDataTypes)
 
         args.addAll(implicitParams)
+        var invokeResult = try {
+            method.invoke(instance, *args.toTypedArray())
+        } catch (e : Exception) {
+            e.printStackTrace()
+            InternalServerError("a server error occured")
+        }
 
-        var invokeResult = method.invoke(instance, *args.toTypedArray())
         if (invokeResult is HttpStatus)
             resp.status(invokeResult.code)
         return jacksonObjectMapper().writeValueAsString(invokeResult)

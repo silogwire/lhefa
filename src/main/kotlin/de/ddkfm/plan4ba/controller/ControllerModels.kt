@@ -6,8 +6,6 @@ import spark.Response
 open class ControllerInterface(
         var req : Request,
         var resp : Response
-) {
-
-}
+)
 
 

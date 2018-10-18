@@ -10,6 +10,7 @@ data class BadRequest(var customMessage : String = "Bad Request") : HttpStatus(c
 data class AlreadyExists(var customMessage : String = "Already Exists") : HttpStatus(code = 409, message = customMessage)
 data class OK(var customMessage: String = "OK") : HttpStatus(code = 200, message = customMessage)
 data class Created(var customMessage: String = "Created") : HttpStatus(code = 201, message = customMessage)
+data class InternalServerError(var customMessage : String = "Internal Server Error") : HttpStatus(code = 500, message = customMessage)
 
 data class PasswordParam(
         var password : String

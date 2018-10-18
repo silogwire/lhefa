@@ -5,10 +5,17 @@ data class User(
         var matriculationNumber: String,
         var userHash : String?,
         var password : String,
-        var lastLogin : Long?,
         var groupId : Int,
-        var storeUserHash : Boolean,
-        var hasUserSpecificCalendar : Boolean
+        var lastLecturePolling : Long,
+        var lastLectureCall : Long
+)
+
+
+data class Token(
+        var token : String,
+        var userId : Int,
+        var isCalDavToken : Boolean,
+        var validTo : Long
 )
 
 data class UserGroup(
@@ -19,7 +26,24 @@ data class UserGroup(
 
 data class University(
         var id : Int,
-        var name : String
+        var name : String,
+        var accentColor : String,
+        var logoUrl : String
+)
+
+data class Meal(
+        var universityId: Int,
+        var day : Long,
+        var meals : List<Food>
+
+)
+
+data class Food(
+        var description: String,
+        var prices : String,
+        var vegetarian : Boolean,
+        var vegan : Boolean,
+        var additionalInformation : String
 )
 
 data class Lecture(
@@ -35,6 +59,6 @@ data class Lecture(
         var instructor : String,
         var remarks : String,
         var exam : Boolean,
-        var userId : Int?,
-        var groupId : Int?
+        var userId : Int
 )
+
