@@ -121,7 +121,8 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
             existingUser.matriculationNumber = user.matriculationNumber
             existingUser.userHash = user.userHash
             existingUser.userHash = user.userHash
-            existingUser.password = DigestUtils.sha512Hex(user.password)
+            if(!user.password.isNullOrEmpty())
+                existingUser.password = DigestUtils.sha512Hex(user.password)
             existingUser.lastLectureCall = user.lastLectureCall
             existingUser.lastLecturePolling = user.lastLecturePolling
 
