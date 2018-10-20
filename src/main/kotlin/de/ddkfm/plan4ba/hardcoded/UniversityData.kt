@@ -1,6 +1,7 @@
 package de.ddkfm.plan4ba.hardcoded
 
 import de.ddkfm.plan4ba.models.Food
+import de.ddkfm.plan4ba.models.Geo
 import de.ddkfm.plan4ba.models.Meal
 import de.ddkfm.plan4ba.utils.toMillis
 import org.jsoup.Jsoup
@@ -11,6 +12,7 @@ open class UniversityData {
     open var accentColor : String = "#009ee3"
     open var logo : String = "https://www.ba-sachsen.de/fileadmin/tmpl/daten/berufsakademie_sachsen/img/logo/ba_sachsen_logo.svg"
     open fun getMeals(day : LocalDate) : List<Food> = emptyList()
+    open fun getLocation() : Geo = Geo(0.0, 0.0)
     companion object {
         @JvmStatic
         fun getInstance(uni : String) : UniversityData = when(uni) {
@@ -42,6 +44,8 @@ class BaLeipzig : UniversityData() {
                     )
         }
     }
+
+    override fun getLocation(): Geo = Geo(51.310394, 12.303310)
 }
 
 class BaDresden : UniversityData() {

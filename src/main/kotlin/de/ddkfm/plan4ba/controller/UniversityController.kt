@@ -60,6 +60,21 @@ class UniversityController(req : Request, resp : Response) : ControllerInterface
     }
 
     @GET
+    @ApiOperation(value = "return the geo locations for the university")
+    @ApiResponses(
+            ApiResponse(code = 200, message = "successfull", response = Meal::class, responseContainer = "List"),
+            ApiResponse(code = 404, response = NotFound::class, message = "University Not Found")
+    )
+    @ApiImplicitParam(name = "id", paramType = "path", dataType = "integer")
+    @Path("/:id/location")
+    fun getGeoInformation(@ApiParam(hidden = true) id : Int) : Any? = HibernateUtils.doInHibernate { session ->
+        val university = getUniversity(id)
+        if(university is University) {
+            UniversityData.getInstance(university.name).getLocation()
+        } else NotFound("university not found")
+    }
+
+    @GET
     @ApiOperation(value = "get a specific university", notes = "get a specific university")
     @ApiImplicitParam(name = "id", paramType = "path", dataType = "integer")
     @ApiResponses(
