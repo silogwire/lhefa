@@ -26,7 +26,29 @@ class LectureController(req : Request, resp : Response) : ControllerInterface(re
         val lectures = session.createQuery("From HibernateLecture $where", HibernateLecture::class.java)
                 .list()
                 .map { it.toLecture() }
+        if(userId != -1) {
+            session.doInTransaction {
+                session.createQuery("Update HibernateUser set lastLectureCall = ${System.currentTimeMillis()} WHERE id = $userId")
+                        .executeUpdate()
+            }
+        }
         lectures
+    }
+
+    @DELETE
+    @ApiOperation(value = "delete all lectures by userId")
+    @ApiResponses(
+            ApiResponse(code = 200, message = "successfull", response = OK::class)
+    )
+    @ApiImplicitParam(name = "userId", paramType = "query", dataType = "integer")
+    @Path("")
+    fun deleteLectures(@ApiParam(hidden = true) userId : Int) : Any? = HibernateUtils.doInHibernate { session ->
+        session.doInTransaction {
+            val affectedRows = session.createQuery("Delete From HibernateLecture WHERE user_id = $userId")
+                    .executeUpdate()
+            OK("affected rows: $affectedRows")
+        }
+
     }
 
     @GET
@@ -54,22 +76,20 @@ class LectureController(req : Request, resp : Response) : ControllerInterface(re
     )
     fun createLecture(@ApiParam lecture : Lecture) : Any? {
         return HibernateUtils.doInHibernate { session ->
-            var groupSQL = ""
             var userSQL = ""
             if(lecture.userId != null && lecture.userId!! > 0) {
                 val user = session.find(HibernateUser::class.java, lecture.userId)
                 if(user != null) {
-                    userSQL = "AND user_id = $user.id"
-                    groupSQL = "AND group_id = ${user.group.id}"
+                    userSQL = "AND user_id = ${user.id}"
                 }
             }
 
-            var existingLecture = session.createQuery("From HibernateLecture Where title = '${lecture.title}'" +
-                    " AND start = ${lecture.start} AND end = ${lecture.end}" +
-                    " $userSQL $groupSQL", HibernateLecture::class.java).uniqueResultOptional()
+            var existingLecture = session.createQuery("From HibernateLecture l Where l.title = '${lecture.title}'" +
+                    " AND l.start = ${lecture.start} AND l.end = ${lecture.end}" +
+                    " $userSQL", HibernateLecture::class.java).uniqueResultOptional()
 
 
-            if(!existingLecture.isPresent)
+            if(existingLecture.isPresent)
                 AlreadyExists("Lecture already exists")
             else {
                 session.beginTransaction()
