@@ -34,8 +34,7 @@ class TokenController(req : Request, resp : Response) : ControllerInterface(req 
             where += "AND user_id = $userId"
         if(valid)
             where += "AND validTo > ${System.currentTimeMillis()}"
-        if(caldavToken)
-            where += "AND isCalDavToken = $caldavToken"
+        where += "AND isCalDavToken = $caldavToken"
         session.createQuery("From HibernateToken $where", HibernateToken::class.java).list()
                 .map { it.toToken() }
     }
