@@ -27,7 +27,7 @@ open class UniversityData {
 
 class BaLeipzig : UniversityData() {
     override var accentColor: String = "#309D4A"
-    override var logo: String = "http://www.logistik-leipzig-halle.net/wp-content/uploads/2017/02/berufsakademie_logo_neu.jpg"
+    override var logo: String = "https://www.ba-leipzig.de/fileadmin/tmpl/daten/berufsakademie_sachsen/img/logo/ba_leipzig_logo.svg"
     override fun getMeals(day: LocalDate): List<Food> {
         val date = "${day.year}-${day.monthValue}-${day.dayOfMonth}"
         val url = "https://www.studentenwerk-leipzig.de/mensen-cafeterien/speiseplan?location=140&date=$date&criteria=&meal_type=all"
