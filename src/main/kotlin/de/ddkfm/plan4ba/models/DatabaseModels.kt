@@ -63,13 +63,17 @@ data class HibernateToken(
         var isCalDavToken : Boolean,
 
         @Column
+        var isRefreshToken : Boolean,
+
+        @Column
         var validTo : Long
 ) {
         fun toToken() = Token(
                 token = this.token,
                 validTo = this.validTo,
                 userId = this.user.id,
-                isCalDavToken = this.isCalDavToken
+                isCalDavToken = this.isCalDavToken,
+                isRefreshToken = this.isRefreshToken
         )
 }
 

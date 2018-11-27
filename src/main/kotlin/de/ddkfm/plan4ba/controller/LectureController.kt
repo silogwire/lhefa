@@ -27,9 +27,17 @@ class LectureController(req : Request, resp : Response) : ControllerInterface(re
                 .list()
                 .map { it.toLecture() }
         if(userId != -1) {
-            session.doInTransaction {
-                session.createQuery("Update HibernateUser set lastLectureCall = ${System.currentTimeMillis()} WHERE id = $userId")
-                        .executeUpdate()
+            val transaction = session.beginTransaction()
+            try {
+                val user = session.find(HibernateUser::class.java, userId)
+                if(user != null) {
+                    user.lastLectureCall = System.currentTimeMillis()
+                    session.saveOrUpdate(user)
+                }
+                transaction.commit()
+            } catch (e : Exception) {
+                transaction.rollback()
+                println("Fehler in allLectures: " + e)
             }
         }
         lectures

@@ -22,19 +22,22 @@ class TokenController(req : Request, resp : Response) : ControllerInterface(req 
     @ApiImplicitParams(
             ApiImplicitParam(name = "userId", paramType = "query", dataType = "integer", required = false),
             ApiImplicitParam(name = "valid", paramType = "query", dataType = "boolean", required = false),
-            ApiImplicitParam(name = "caldavToken", paramType = "query", dataType = "boolean", required = false)
+            ApiImplicitParam(name = "caldavToken", paramType = "query", dataType = "boolean", required = false),
+            ApiImplicitParam(name = "refreshToken", paramType = "query", dataType = "boolean", required = false)
     )
 
     @Path("")
     fun allTokens(@ApiParam(hidden = true) userId : Int,
                   @ApiParam(hidden = true) valid : Boolean,
-                  @ApiParam(hidden = true) caldavToken : Boolean) : Any? = HibernateUtils.doInHibernate { session ->
+                  @ApiParam(hidden = true) caldavToken : Boolean,
+                  @ApiParam(hidden = true) refreshToken : Boolean) : Any? = HibernateUtils.doInHibernate { session ->
         var where = "WHERE 1=1"
         if(userId != -1)
             where += "AND user_id = $userId"
         if(valid)
             where += "AND validTo > ${System.currentTimeMillis()}"
         where += "AND isCalDavToken = $caldavToken"
+        where += " AND isRefreshToken = $refreshToken"
         session.createQuery("From HibernateToken $where", HibernateToken::class.java).list()
                 .map { it.toToken() }
     }
@@ -78,7 +81,7 @@ class TokenController(req : Request, resp : Response) : ControllerInterface(req 
                 if(user == null)
                     BadRequest("user does not exist")
                 else {
-                    val hibernateToken = HibernateToken(token.token, user, token.isCalDavToken, token.validTo)
+                    val hibernateToken = HibernateToken(token.token, user, token.isCalDavToken, token.isRefreshToken, token.validTo)
                     try {
                         session.doInTransaction {
                             session.persist(hibernateToken)

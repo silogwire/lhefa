@@ -15,7 +15,8 @@ data class Token(
         var token : String,
         var userId : Int,
         var isCalDavToken : Boolean,
-        var validTo : Long
+        var validTo : Long,
+        var isRefreshToken : Boolean
 )
 
 data class UserGroup(

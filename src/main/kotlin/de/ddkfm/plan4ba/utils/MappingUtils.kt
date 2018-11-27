@@ -91,7 +91,8 @@ fun Token.toHibernateToken() : HibernateToken {
                     lastLectureCall = 0
             ),
             validTo = this.validTo,
-            isCalDavToken = this.isCalDavToken
+            isCalDavToken = this.isCalDavToken,
+            isRefreshToken = this.isRefreshToken
     )
 }
 
