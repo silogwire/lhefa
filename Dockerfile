@@ -1,5 +1,5 @@
 FROM library/openjdk:10-jre
-ARG DBSERVICE_VERSION=1.5
+ARG DBSERVICE_VERSION=1.6
 
 COPY target/DBService-${DBSERVICE_VERSION}-jar-with-dependencies.jar /app/DBService.jar
 WORKDIR /app
