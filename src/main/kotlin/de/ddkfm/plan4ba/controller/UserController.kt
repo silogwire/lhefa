@@ -1,7 +1,9 @@
 package de.ddkfm.plan4ba.controller
 
 import de.ddkfm.plan4ba.models.*
-import de.ddkfm.plan4ba.utils.*
+import de.ddkfm.plan4ba.utils.HibernateUtils
+import de.ddkfm.plan4ba.utils.doInTransaction
+import de.ddkfm.plan4ba.utils.toHibernateUser
 import io.swagger.annotations.*
 import org.apache.commons.codec.digest.DigestUtils
 import spark.Request
@@ -139,6 +141,41 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
                 e.printStackTrace()
                 InternalServerError("Could not update the User")
             }
+        }
+    }
+
+    @DELETE
+    @ApiOperation(value = "delete any user data")
+    @Path("/:id")
+    @ApiImplicitParams(
+            ApiImplicitParam(name = "id", paramType = "path", dataType = "integer")
+    )
+    @ApiResponses(
+            ApiResponse(code = 200, message = "User updated", response = OK::class),
+            ApiResponse(code = 400, message = "Group with id {integer} does not exist", response = BadRequest::class),
+            ApiResponse(code = 404, message = "User does not exist", response = NotFound::class),
+            ApiResponse(code = 500, message = "Could not delete userdata", response = InternalServerError::class)
+    )
+    fun deleteUserData(@ApiParam passwordParam : PasswordParam,
+                       @ApiParam(hidden = true) id : Int) : Any? {
+        val authenticated = this.authenticate(passwordParam, id)
+        if(authenticated is User) {
+            val hqlScripts = listOf(
+                    "DELETE From HibernateToken Where user_id = $id",
+                    "DELETE From HibernateLecture Where user_id = $id",
+                    "DELETE From HibernateUser Where id = $id"
+            )
+            return HibernateUtils.doInHibernate { session ->
+                session.doInTransaction {trans ->
+                    val sumRowsDeleted = hqlScripts
+                            .map(trans::createQuery)
+                            .map { it.executeUpdate() }
+                            .sum()
+                    OK("userdata was deleted")
+                }
+            }
+        } else {
+            return authenticated
         }
     }
 }
