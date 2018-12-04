@@ -2,6 +2,7 @@ package de.ddkfm.plan4ba.models
 
 import de.ddkfm.plan4ba.hardcoded.UniversityData
 import org.apache.commons.codec.digest.DigestUtils
+import org.hibernate.annotations.Type
 import javax.persistence.*
 
 @Entity
@@ -126,6 +127,30 @@ data class HibernateUniversity(
         )
 }
 
+@Entity
+@Table(name = "[Infotext]",
+        indexes = [
+        Index(columnList = "key")])
+data class HibernateInfotext(
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        var id : Int,
+        @Column
+        var key : String,
+        @Lob
+        @Type(type = "text")
+        @Column(length = Integer.MAX_VALUE)
+        var description: String
+
+) {
+        fun toInfotext() : Infotext {
+                return Infotext(
+                        id = this.id,
+                        key = this.key,
+                        description = this.description
+                )
+        }
+}
 @Entity
 @Table(name = "[Lecture]",
         indexes = [

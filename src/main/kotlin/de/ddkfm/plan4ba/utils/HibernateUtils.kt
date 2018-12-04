@@ -27,13 +27,30 @@ class HibernateUtils {
             configuration.addAnnotatedClass(HibernateUser::class.java)
             configuration.addAnnotatedClass(HibernateLecture::class.java)
             configuration.addAnnotatedClass(HibernateToken::class.java)
+            configuration.addAnnotatedClass(HibernateInfotext::class.java)
 
             try {
                 sessionFactory = configuration.buildSessionFactory()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-
+            initDatabase()
+        }
+        private fun initDatabase() {
+            val infotexts = mapOf(
+                    "login.storehash" to "Soll ihr Campus Dual Hash gespeichert werden, um ihren Stundenplan täglich zu aktualiseren",
+                    "login.privacynotice" to "Datenschutzerklärung der Stundenplan-App Plan4BA"
+            )
+            infotexts.keys.forEach { key ->
+                doInHibernate { session ->
+                    val infotext = session.createQuery("From HibernateInfotext Where key = '$key'", HibernateInfotext::class.java).list().firstOrNull()
+                    if(infotext == null) {
+                        session.doInTransaction {
+                            it.save(HibernateInfotext(0, key, infotexts.getOrDefault(key, "")))
+                        }
+                    }
+                }
+            }
         }
 
         fun <T> doInHibernate(func : (session : Session) -> T) : T? {
