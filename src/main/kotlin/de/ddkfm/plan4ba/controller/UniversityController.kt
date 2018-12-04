@@ -48,6 +48,11 @@ class UniversityController(req : Request, resp : Response) : ControllerInterface
         if(university is University) {
             var currentDay = LocalDate.now()
             val mealEntries = mutableListOf<Meal>()
+            currentDay = when(currentDay.dayOfWeek) {
+                DayOfWeek.SATURDAY -> currentDay.plusDays(2)
+                DayOfWeek.SUNDAY -> currentDay.plusDays(1)
+                else -> currentDay
+            }
             while (currentDay.dayOfWeek < DayOfWeek.SATURDAY) {
                 mealEntries.add(Meal(
                         universityId = university.id,

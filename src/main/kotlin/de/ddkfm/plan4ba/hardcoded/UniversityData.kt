@@ -29,7 +29,7 @@ class BaLeipzig : UniversityData() {
     override var accentColor: String = "#309D4A"
     override var logo: String = "https://www.ba-leipzig.de/fileadmin/tmpl/daten/berufsakademie_sachsen/img/logo/ba_leipzig_logo.svg"
     override fun getMeals(day: LocalDate): List<Food> {
-        val date = "${day.year}-${day.monthValue}-${day.dayOfMonth}"
+        val date = "%d-%02d-%02d".format(day.year, day.monthValue, day.dayOfMonth)
         val url = "https://www.studentenwerk-leipzig.de/mensen-cafeterien/speiseplan?location=140&date=$date&criteria=&meal_type=all"
         val doc = Jsoup.parse(URL(url), 5000)
         val meals = doc.getElementsByClass("meals__head")
