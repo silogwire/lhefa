@@ -61,16 +61,23 @@ class LectureController(req : Request, resp : Response) : ControllerInterface(re
 
     @GET
     @ApiOperation(value = "get a specific lecture", notes = "get a specific lecture")
-    @ApiImplicitParam(name = "id", paramType = "path", dataType = "integer")
+    @ApiImplicitParams(
+            ApiImplicitParam(name = "id", paramType = "path", dataType = "integer"),
+            ApiImplicitParam(name = "userId", paramType = "query", dataType = "integer")
+    )
     @ApiResponses(
             ApiResponse(code = 200, message = "successfull", response = Lecture::class),
             ApiResponse(code = 404, response = NotFound::class, message = "Not Found")
     )
     @Path("/:id")
-    fun getLecture(@ApiParam(hidden = true) id : Int) : Any? {
+    fun getLecture(@ApiParam(hidden = true) id : Int,
+                   @ApiParam(hidden = true) userId : Int) : Any? {
         return HibernateUtils.doInHibernate { session ->
             var lecture = session.find(HibernateLecture::class.java, id)
-            lecture?.toLecture() ?: NotFound()
+            if(lecture == null || (userId != -1 && lecture.user.id != userId))
+                NotFound()
+            else
+                lecture.toLecture()
         }
     }
 
@@ -105,7 +112,10 @@ class LectureController(req : Request, resp : Response) : ControllerInterface(re
 
                     session.persist(lecture.toHibernateLecture())
                     session.transaction.commit()
-                    lecture
+                    var insertedLecture = session.createQuery("From HibernateLecture l Where l.title = '${lecture.title}'" +
+                            " AND l.start = ${lecture.start} AND l.end = ${lecture.end}" +
+                            " $userSQL", HibernateLecture::class.java).uniqueResult()
+                    insertedLecture.toLecture()
                 } catch (e : Exception) {
                     e.printStackTrace()
                     session.transaction.rollback()
