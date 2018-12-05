@@ -1,5 +1,7 @@
 package de.ddkfm.plan4ba.models
 
+import javax.persistence.*
+
 data class User(
         var id: Int,
         var matriculationNumber: String,
@@ -73,4 +75,17 @@ data class Infotext(
         var key : String,
         var description: String
 )
+data class NotificationData(
+        var type : String,
+        var id : Int
+)
 
+data class Notification(
+        var id : Int,
+        var label : String,
+        var description : String,
+        /*var type : String,
+        var viewed : Boolean,
+        var data : NotificationData?,*/
+        var userId : Int
+)

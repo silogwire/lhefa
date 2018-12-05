@@ -202,4 +202,36 @@ data class HibernateLecture(
         )
 }
 
-
+@Entity
+@Table(name = "[Notification]")
+data class HibernateNotification(
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        var id : Int,
+        @Column
+        var label : String,
+        @Column
+        var description : String,
+        /*
+        @Column
+        var type : String,
+        @Column
+        var viewed : Boolean,
+        @Column
+        var data : String?,
+        */
+        @OneToOne
+        var user : HibernateUser
+) {
+        fun toNotification() : Notification {
+                return Notification(
+                        id = this.id,
+                        label = this.label,
+                        description =  this.description,
+                        /*type = this.type,
+                        viewed = this.viewed,
+                        data = null,*/
+                        userId = this.user.id
+                )
+        }
+}
