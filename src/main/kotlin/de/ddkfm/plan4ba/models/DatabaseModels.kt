@@ -235,3 +235,26 @@ data class HibernateNotification(
                 )
         }
 }
+
+@Entity
+@Table(name = "[Link]")
+data class HibernateLink(
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        var id : Int,
+        @Column
+        var label : String,
+        @Column
+        var url : String,
+        @OneToOne
+        var university : HibernateUniversity
+) {
+        fun toLink() : Link {
+                return Link(
+                        id = this.id,
+                        label = this.label,
+                        url = this.url,
+                        universityId = this.university.id
+                )
+        }
+}

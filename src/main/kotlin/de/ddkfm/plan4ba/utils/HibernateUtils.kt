@@ -29,6 +29,8 @@ class HibernateUtils {
             configuration.addAnnotatedClass(HibernateToken::class.java)
             configuration.addAnnotatedClass(HibernateInfotext::class.java)
             configuration.addAnnotatedClass(HibernateNotification::class.java)
+            configuration.addAnnotatedClass(HibernateLink::class.java)
+
 
             try {
                 sessionFactory = configuration.buildSessionFactory()

@@ -65,6 +65,23 @@ class UniversityController(req : Request, resp : Response) : ControllerInterface
     }
 
     @GET
+    @ApiOperation(value = "list all links for a university", notes = "return all links for a university")
+    @ApiResponses(
+            ApiResponse(code = 200, message = "successfull", response = Link::class, responseContainer = "List"),
+            ApiResponse(code = 404, response = NotFound::class, message = "University Not Found")
+    )
+    @ApiImplicitParam(name = "id", paramType = "path", dataType = "integer")
+    @Path("/:id/links")
+    fun getLinksFromUniversity(@ApiParam(hidden = true) id : Int) : Any? = HibernateUtils.doInHibernate { session ->
+        val university = this.getUniversity(id)
+        if(university is University) {
+            val links = session.createQuery("From HibernateLink Where university_id = ${university.id}", HibernateLink::class.java).list()
+            links.map { it.toLink() }
+        } else
+            NotFound("university not found")
+    }
+
+    @GET
     @ApiOperation(value = "return the geo locations for the university")
     @ApiResponses(
             ApiResponse(code = 200, message = "successfull", response = Meal::class, responseContainer = "List"),
