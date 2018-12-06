@@ -49,21 +49,21 @@ class HibernateUtils {
                     val infotext = session.createQuery("From HibernateInfotext Where key = '$key'", HibernateInfotext::class.java).list().firstOrNull()
                     doInTransaction(session) {
                         if(infotext == null)
-                            it.save(HibernateInfotext(0, key, infotexts.getOrDefault(key, ""), "de-DE"))
+                            it.save(HibernateInfotext(0, key, infotexts.getOrDefault(key, ""), "de"))
                     }
                 }
             }
             val abandonedIntotexts = doInHibernate { it.createQuery("From HibernateInfotext Where language is null or language = ''", HibernateInfotext::class.java).list() }
             abandonedIntotexts?.forEach { info ->
                 doInHibernate { doInTransaction(it) { session ->
-                    session.update(info.copy(language = "de-DE"))
+                    session.update(info.copy(language = "de"))
                 } }
             }
 
             val links = doInHibernate { it.createQuery("From HibernateLink Where language is null or language = ''", HibernateLink::class.java).list() }
             links?.forEach { link ->
                 doInHibernate { doInTransaction(it) { session ->
-                    session.update(link.copy(language = "de-DE"))
+                    session.update(link.copy(language = "de"))
                 } }
             }
 

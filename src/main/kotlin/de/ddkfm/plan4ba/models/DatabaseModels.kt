@@ -142,7 +142,7 @@ data class HibernateInfotext(
         @Column(length = Integer.MAX_VALUE)
         var description: String,
         @Column(length = 5)
-        var language : String
+        var language : String = "de"
 
 ) {
         fun toInfotext() : Infotext {
@@ -255,7 +255,7 @@ data class HibernateLink(
         @OneToOne
         var group : HibernateUserGroup?,
         @Column(length = 5)
-        var language : String
+        var language : String = "de"
 ) {
         fun toLink() : Link {
                 return Link(
