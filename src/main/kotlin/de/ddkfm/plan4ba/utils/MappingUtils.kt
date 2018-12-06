@@ -96,26 +96,6 @@ fun Token.toHibernateToken() : HibernateToken {
     )
 }
 
-fun Notification.toHibernateNotification() : HibernateNotification {
-    return HibernateNotification(
-            id = this.id,
-            description = this.description,
-            label = this.label,
-            /*type = this.type,
-            data = this.data.toJson(),
-            viewed = this.viewed,*/
-            user = HibernateUser(
-                    id = this.userId,
-                    password = "",
-                    userHash = "",
-                    matriculationNumber = "",
-                    group = HibernateUserGroup(0, "", HibernateUniversity(0, "", "", "")),
-                    lastLecturePolling = 0,
-                    lastLectureCall = 0
-            )
-    )
-}
-
 fun Any.toJson() : String {
     return jacksonObjectMapper().writeValueAsString(this)
 }

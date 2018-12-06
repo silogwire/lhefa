@@ -68,7 +68,7 @@ class NotificationController(req : Request, resp : Response) : ControllerInterfa
                 if(user == null)
                     BadRequest("user does not exist")
                 else {
-                    val hibernateNotification = HibernateNotification(0, notification.label, notification.description,  /*notification.type, notification.viewed, notification.data?.toJson(),*/ user)
+                    val hibernateNotification = HibernateNotification(0, notification.label, notification.description,  notification.type, /*notification.viewed, notification.data?.toJson(),*/ user)
                     try {
                         session.doInTransaction {
                             session.persist(hibernateNotification)

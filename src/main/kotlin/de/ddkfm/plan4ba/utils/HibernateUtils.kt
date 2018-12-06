@@ -47,13 +47,26 @@ class HibernateUtils {
             infotexts.keys.forEach { key ->
                 doInHibernate { session ->
                     val infotext = session.createQuery("From HibernateInfotext Where key = '$key'", HibernateInfotext::class.java).list().firstOrNull()
-                    if(infotext == null) {
-                        session.doInTransaction {
-                            it.save(HibernateInfotext(0, key, infotexts.getOrDefault(key, "")))
-                        }
+                    doInTransaction(session) {
+                        if(infotext == null)
+                            it.save(HibernateInfotext(0, key, infotexts.getOrDefault(key, ""), "de-DE"))
                     }
                 }
             }
+            val abandonedIntotexts = doInHibernate { it.createQuery("From HibernateInfotext Where language is null or language = ''", HibernateInfotext::class.java).list() }
+            abandonedIntotexts?.forEach { info ->
+                doInHibernate { doInTransaction(it) { session ->
+                    session.update(info.copy(language = "de-DE"))
+                } }
+            }
+
+            val links = doInHibernate { it.createQuery("From HibernateLink Where language is null or language = ''", HibernateLink::class.java).list() }
+            links?.forEach { link ->
+                doInHibernate { doInTransaction(it) { session ->
+                    session.update(link.copy(language = "de-DE"))
+                } }
+            }
+
         }
 
         fun <T> doInHibernate(func : (session : Session) -> T) : T? {

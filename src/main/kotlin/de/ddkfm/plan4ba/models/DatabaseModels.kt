@@ -140,14 +140,17 @@ data class HibernateInfotext(
         @Lob
         @Type(type = "text")
         @Column(length = Integer.MAX_VALUE)
-        var description: String
+        var description: String,
+        @Column(length = 5)
+        var language : String
 
 ) {
         fun toInfotext() : Infotext {
                 return Infotext(
                         id = this.id,
                         key = this.key,
-                        description = this.description
+                        description = this.description,
+                        language = this.language
                 )
         }
 }
@@ -212,9 +215,10 @@ data class HibernateNotification(
         var label : String,
         @Column
         var description : String,
-        /*
+
         @Column
         var type : String,
+        /*
         @Column
         var viewed : Boolean,
         @Column
@@ -228,8 +232,8 @@ data class HibernateNotification(
                         id = this.id,
                         label = this.label,
                         description =  this.description,
-                        /*type = this.type,
-                        viewed = this.viewed,
+                        type = this.type,
+                        /*viewed = this.viewed,
                         data = null,*/
                         userId = this.user.id
                 )
@@ -249,7 +253,9 @@ data class HibernateLink(
         @OneToOne
         var university : HibernateUniversity?,
         @OneToOne
-        var group : HibernateUserGroup?
+        var group : HibernateUserGroup?,
+        @Column(length = 5)
+        var language : String
 ) {
         fun toLink() : Link {
                 return Link(
@@ -257,7 +263,8 @@ data class HibernateLink(
                         label = this.label,
                         url = this.url,
                         universityId = this.university?.id ?: -1,
-                        groupId = this.group?.id ?: -1
+                        groupId = this.group?.id ?: -1,
+                        language = this.language
                 )
         }
 }

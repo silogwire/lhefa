@@ -84,8 +84,8 @@ data class Notification(
         var id : Int,
         var label : String,
         var description : String,
-        /*var type : String,
-        var viewed : Boolean,
+        var type : String,
+        /*var viewed : Boolean,
         var data : NotificationData?,*/
         var userId : Int
 )
@@ -95,5 +95,6 @@ data class Link(
         var label : String,
         var url : String,
         var universityId : Int,
-        var groupId : Int
+        var groupId : Int,
+        var language : String
 )
