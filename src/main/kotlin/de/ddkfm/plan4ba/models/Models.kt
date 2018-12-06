@@ -73,7 +73,8 @@ data class Geo(
 data class Infotext(
         var id : Int,
         var key : String,
-        var description: String
+        var description: String,
+        var language : String
 )
 data class NotificationData(
         var type : String,
