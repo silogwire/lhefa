@@ -94,5 +94,6 @@ data class Link(
         var id : Int,
         var label : String,
         var url : String,
-        var universityId : Int
+        var universityId : Int,
+        var groupId : Int
 )

@@ -178,4 +178,26 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
             return authenticated
         }
     }
+
+
+
+    @GET
+    @ApiOperation(value = "list all links by a given user", notes = "return all links from group and university")
+    @ApiResponses(
+            ApiResponse(code = 200, message = "successfull", response = Link::class, responseContainer = "List"),
+            ApiResponse(code = 404, response = NotFound::class, message = "University Not Found")
+    )
+    @ApiImplicitParam(name = "id", paramType = "path", dataType = "integer")
+    @Path("/:id/links")
+    fun getLinksByGroupAndUniversity (@ApiParam(hidden = true) id : Int) : Any? = HibernateUtils.doInHibernate { session ->
+        val user = session.find(HibernateUser::class.java, id)
+        if(user == null)
+            NotFound()
+        else {
+            val group = user.group
+            val university = group.university
+            val links = session.createQuery("From HibernateLink Where university_id = ${university.id} OR group_id = ${group.id}", HibernateLink::class.java).list()
+            links.map { it.toLink() }
+        }
+    }
 }

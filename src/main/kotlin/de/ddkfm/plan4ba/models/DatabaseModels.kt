@@ -247,14 +247,17 @@ data class HibernateLink(
         @Column
         var url : String,
         @OneToOne
-        var university : HibernateUniversity
+        var university : HibernateUniversity?,
+        @OneToOne
+        var group : HibernateUserGroup?
 ) {
         fun toLink() : Link {
                 return Link(
                         id = this.id,
                         label = this.label,
                         url = this.url,
-                        universityId = this.university.id
+                        universityId = this.university?.id ?: -1,
+                        groupId = this.group?.id ?: -1
                 )
         }
 }
