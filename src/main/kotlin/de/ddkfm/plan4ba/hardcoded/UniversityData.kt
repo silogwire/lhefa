@@ -2,11 +2,11 @@ package de.ddkfm.plan4ba.hardcoded
 
 import de.ddkfm.plan4ba.models.Food
 import de.ddkfm.plan4ba.models.Geo
-import de.ddkfm.plan4ba.models.Meal
-import de.ddkfm.plan4ba.utils.toMillis
 import org.jsoup.Jsoup
 import java.net.URL
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.*
 
 open class UniversityData {
     open var accentColor : String = "#009ee3"
@@ -50,6 +50,30 @@ class BaLeipzig : UniversityData() {
 
 class BaDresden : UniversityData() {
     override var logo : String = ""
+    override fun getMeals(day: LocalDate): List<Food> {
+        val now = LocalDate.now()
+        val beginOfWeek = now.minusDays(now.dayOfWeek.value - 1L)
+        val endOfWorkWeek = now.plusDays(5L - now.dayOfWeek.value)
+        val week = if(day in beginOfWeek..endOfWorkWeek) "" else "-w1"
+        val url = "https://www.studentenwerk-dresden.de/mensen/speiseplan/mensa-johannstadt.html$week"
+        val doc = Jsoup.parse(URL(url), 5000)
+        val meals = doc.getElementsByTag("article")
+        val dayFormatted = day.format(DateTimeFormatter.ofPattern("EEEE, d. MMMM yyyy", Locale.GERMAN))
+        return meals
+                .filter { it.select(".swdd-ueberschrift").html() == dayFormatted }
+                .map { element ->
+                    element.select(".swiper-slide").map { swiper ->
+                        val description = swiper.select(".flex-grow-1").text()
+                        val prices = swiper.select("strong").html()
+                        val vegetarian = swiper.select("img[alt=\"vegetarisch\"]").isNotEmpty()
+                        val vegan = swiper.select("img[alt=\"vegan\"]").isNotEmpty()
+                        if(description.isNullOrEmpty() ) null
+                        else Food(description, prices, vegetarian || vegan, vegan, "")
+                    }
+                }
+                .flatten()
+                .filterNotNull()
+    }
 }
 
 class BaPlauen : UniversityData() {
