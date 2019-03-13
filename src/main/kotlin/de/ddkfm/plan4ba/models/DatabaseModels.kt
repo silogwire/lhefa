@@ -268,3 +268,85 @@ data class HibernateLink(
                 )
         }
 }
+
+@Entity
+@Table(name = "[ExamStats]")
+data class HibernateExamStats(
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        var id : Int,
+
+        @OneToOne
+        var user : HibernateUser,
+
+        @Column
+        var booked : Int,
+        @Column
+        var exams : Int,
+        @Column
+        var failure : Int,
+        @Column
+        var mbooked : Int,
+        @Column
+        var modules : Int,
+        @Column
+        var success : Int
+) {
+    fun toExamStats() : ExamStats {
+        return ExamStats(
+                id = this.id,
+                userId = this.user.id,
+                booked = this.booked,
+                exams = this.exams,
+                failure = this.failure,
+                mbooked = this.mbooked,
+                modules = this.modules,
+                success = this.success
+        )
+    }
+}
+
+
+@Entity
+@Table(name = "[Reminder]")
+data class HibernateReminder(
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        var id : Int,
+
+        @OneToOne
+        var user : HibernateUser,
+
+        @Column
+        var semester : Int,
+        @Column
+        var exams: Int,
+        @Column
+        var electives : Int
+)
+
+@Entity
+@Table(name = "[LatestExamResult]")
+data class HibernateLatestExamResult(
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        var id : Int,
+
+        @OneToOne
+        var reminder : HibernateReminder,
+
+        @Column
+        var grade: Double,
+
+        @Column
+        var status : String,
+
+        @Column
+        var title : String,
+
+        @Column
+        var shortTitle : String,
+
+        @Column
+        var type : String
+)

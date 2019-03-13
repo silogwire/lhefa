@@ -30,6 +30,7 @@ class HibernateUtils {
             configuration.addAnnotatedClass(HibernateInfotext::class.java)
             configuration.addAnnotatedClass(HibernateNotification::class.java)
             configuration.addAnnotatedClass(HibernateLink::class.java)
+            configuration.addAnnotatedClass(HibernateExamStats::class.java)
 
 
             try {
@@ -66,6 +67,16 @@ class HibernateUtils {
                     session.update(link.copy(language = "de"))
                 } }
             }
+            val exam = ExamStats(1, 1, 0, 0, 0, 0, 0, 0)
+            val hibernateExam = exam.toHibernateExamStat()
+            val user = doInHibernate { it.find(HibernateUser::class.java, 1) }
+            //hibernateExam.user = user!!
+            println("vorher: $hibernateExam")
+            doInHibernate { doInTransaction(it) { session ->
+                session.update(hibernateExam)
+                println("nachher1:$hibernateExam")
+            } }
+            println("nachher:$hibernateExam")
 
         }
 

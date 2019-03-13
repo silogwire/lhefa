@@ -49,7 +49,7 @@ fun main(args : Array<String>) {
         }
     }
     if(getEnvOrDefault("ENABLE_SWAGGER", "false").toBoolean()) {
-        var swaggerJson = SwaggerParser.getSwaggerJson("de.ddkfm.plan4ba.controller");
+        var swaggerJson = SwaggerParser.getSwaggerJson("de.ddkfm.plan4ba.controller")
 
         get("/swagger") { _,_-> swaggerJson }
 

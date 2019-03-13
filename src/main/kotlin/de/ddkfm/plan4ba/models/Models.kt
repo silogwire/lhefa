@@ -99,3 +99,14 @@ data class Link(
         var groupId : Int,
         var language : String
 )
+
+data class ExamStats(
+        var id : Int,
+        var userId : Int,
+        var booked : Int,
+        var exams : Int,
+        var failure : Int,
+        var mbooked : Int,
+        var modules : Int,
+        var success : Int
+)

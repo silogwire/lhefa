@@ -96,6 +96,29 @@ fun Token.toHibernateToken() : HibernateToken {
     )
 }
 
+fun ExamStats.toHibernateExamStat() : HibernateExamStats {
+  return HibernateExamStats(
+      id = this.id,
+      success = this.success,
+      modules = this.modules,
+      mbooked = this.mbooked,
+      failure = this.failure,
+      exams = this.exams,
+      booked = this.booked,
+      user = HibernateUser(
+          id = this.userId,
+          password = "",
+          userHash = "",
+          matriculationNumber = "",
+          group = HibernateUserGroup(0, "", HibernateUniversity(0, "", "", "")),
+          lastLecturePolling = 0,
+          lastLectureCall = 0
+      )
+  )
+}
+
+
+
 fun Any.toJson() : String {
     return jacksonObjectMapper().writeValueAsString(this)
 }
