@@ -5,30 +5,48 @@ import de.ddkfm.plan4ba.models.Geo
 import org.jsoup.Jsoup
 import java.net.URL
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.*
+import kotlin.math.absoluteValue
 
 open class UniversityData {
+    var lastTimeCached = mutableMapOf<LocalDate, LocalDateTime>()
+    open var cache : MutableMap<LocalDate, List<Food>> = mutableMapOf()
     open var accentColor : String = "#009ee3"
     open var logo : String = "https://www.ba-sachsen.de/fileadmin/tmpl/daten/berufsakademie_sachsen/img/logo/ba_sachsen_logo.svg"
-    open fun getMeals(day : LocalDate) : List<Food> = emptyList()
+    open protected fun cacheMeal(day : LocalDate) : List<Food> = emptyList()
+    fun getMeals(day : LocalDate) : List<Food> {
+        val cachedMeals = cache[day]
+        val lastUpdated = lastTimeCached[day]
+        val diff = lastUpdated?.until(LocalDateTime.now(), ChronoUnit.HOURS)?.absoluteValue ?: 42//random high number as default value
+        if(cachedMeals == null || diff > 12) {
+            val new = this.cacheMeal(day)
+            cache[day] = new
+            lastTimeCached[day] = LocalDateTime.now()
+            return new
+        }
+        return cachedMeals
+    }
     open fun getLocation() : Geo = Geo(0.0, 0.0)
     companion object {
         @JvmStatic
         fun getInstance(uni : String) : UniversityData = when(uni) {
-            "Staatliche Studienakademie Leipzig" -> BaLeipzig()
-            "Staatliche Studienakademie Dresden" -> BaDresden()
-            "Staatliche Studienakademie Breitenbrunn" -> BaBreitenbrunn()
-            "Staatliche Studienakademie Plauen" -> BaPlauen()
+            "Staatliche Studienakademie Leipzig" -> BaLeipzig
+            "Staatliche Studienakademie Dresden" -> BaDresden
+            "Staatliche Studienakademie Breitenbrunn" -> BaBreitenbrunn
+            "Staatliche Studienakademie Plauen" -> BaPlauen
             else -> UniversityData()
         }
     }
 }
 
-class BaLeipzig : UniversityData() {
+object BaLeipzig : UniversityData() {
     override var accentColor: String = "#309D4A"
     override var logo: String = "https://www.ba-leipzig.de/fileadmin/tmpl/daten/berufsakademie_sachsen/img/logo/ba_leipzig_logo.svg"
-    override fun getMeals(day: LocalDate): List<Food> {
+    override fun cacheMeal(day: LocalDate): List<Food> {
+
         val date = "%d-%02d-%02d".format(day.year, day.monthValue, day.dayOfMonth)
         val url = "https://www.studentenwerk-leipzig.de/mensen-cafeterien/speiseplan?location=140&date=$date&criteria=&meal_type=all"
         val doc = Jsoup.parse(URL(url), 5000)
@@ -48,9 +66,9 @@ class BaLeipzig : UniversityData() {
     override fun getLocation(): Geo = Geo(51.310394, 12.303310)
 }
 
-class BaDresden : UniversityData() {
+object BaDresden : UniversityData() {
     override var logo : String = ""
-    override fun getMeals(day: LocalDate): List<Food> {
+    override fun cacheMeal(day: LocalDate): List<Food> {
         val now = LocalDate.now()
         val beginOfWeek = now.minusDays(now.dayOfWeek.value - 1L)
         val endOfWorkWeek = now.plusDays(5L - now.dayOfWeek.value)
@@ -76,12 +94,12 @@ class BaDresden : UniversityData() {
     }
 }
 
-class BaPlauen : UniversityData() {
+object BaPlauen : UniversityData() {
     override var accentColor: String = "#0171bf"
     override var logo: String = "https://www.ba-plauen.de/images/bilder_neu/header_logo_ba.gif"
 }
 
-class BaBreitenbrunn : UniversityData() {
+object BaBreitenbrunn : UniversityData() {
     override var accentColor : String = "#E60000"
     override var logo : String = "http://www.ba-breitenbrunn.de/typo3temp/pics/43ebf57fb9.jpg"
 }
