@@ -161,6 +161,7 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
         val authenticated = this.authenticate(passwordParam, id)
         if(authenticated is User) {
             val hqlScripts = listOf(
+                    "DELETE From HibernateNotification Where user_id = $id",
                     "DELETE From HibernateToken Where user_id = $id",
                     "DELETE From HibernateLecture Where user_id = $id",
                     "DELETE From HibernateUser Where id = $id"
