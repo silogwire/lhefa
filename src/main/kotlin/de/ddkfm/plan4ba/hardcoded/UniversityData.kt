@@ -54,7 +54,12 @@ object BaLeipzig : UniversityData() {
         return meals
                 .map { element ->
                     Food(
-                            description = element.select("h4").html(),
+                            description = {
+                                val mainTitle = element.select("h4").html()
+                                val details = element.parent().parent().select("details")
+                                val subTitles = details.select(".u-list-bare li").map { it.html() }
+                                (listOf(mainTitle) + subTitles ).joinToString(separator = "\n")
+                            }.invoke(),
                             prices = element.select(".meals__price").text().replace("Preise:", ""),
                             vegetarian = element.select("i.meals__badge[data-icon=\"vegan\"]").isNotEmpty(),
                             vegan = element.select("i.meals__badge[data-icon=\"cheese\"]").isNotEmpty(),
