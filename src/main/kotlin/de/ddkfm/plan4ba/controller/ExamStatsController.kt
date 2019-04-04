@@ -1,6 +1,9 @@
 package de.ddkfm.plan4ba.controller
 
+import de.ddkfm.plan4ba.SentryTurret
+import de.ddkfm.plan4ba.capture
 import de.ddkfm.plan4ba.models.*
+import de.ddkfm.plan4ba.user
 import de.ddkfm.plan4ba.utils.*
 import io.swagger.annotations.*
 import spark.Request
@@ -96,7 +99,11 @@ class ExamStatsController(req : Request, resp : Response) : ControllerInterface(
                 insertedLecture.toLecture()
                 */
             } catch (e : Exception) {
-                e.printStackTrace()
+                SentryTurret.log {
+                    addTag("Hibernate", "")
+                    addTag("createLecture", "")
+                    user(username = examStat.userId.toString())
+                }
                 session.transaction.rollback()
                 HttpStatus(500, "Could not save the lecture")
             }
@@ -139,7 +146,11 @@ class ExamStatsController(req : Request, resp : Response) : ControllerInterface(
                 session.persist(existingLecture)
                 existingLecture.toLecture()
             } catch (e : Exception) {
-                e.printStackTrace()
+                SentryTurret.log {
+                    addTag("Hibernate", "")
+                    addTag("updateLecture", "")
+                    user(username = lecture.userId.toString())
+                }.capture(e)
                 BadRequest("Could not update the lecture")
             }
 

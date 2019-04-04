@@ -1,5 +1,7 @@
 package de.ddkfm.plan4ba.controller
 
+import de.ddkfm.plan4ba.SentryTurret
+import de.ddkfm.plan4ba.capture
 import de.ddkfm.plan4ba.hardcoded.UniversityData
 import de.ddkfm.plan4ba.models.*
 import de.ddkfm.plan4ba.utils.HibernateUtils
@@ -118,7 +120,10 @@ class UniversityController(req : Request, resp : Response) : ControllerInterface
                     }
                     hibernateUniversity.toUniversity()
                 } catch (e : Exception) {
-                    e.printStackTrace()
+                    SentryTurret.log {
+                        addTag("Hibernate", "")
+                        addTag("createUniversity", "")
+                    }.capture(e)
                     HttpStatus(500, "Could not save the university")
                 }
             }
@@ -150,7 +155,10 @@ class UniversityController(req : Request, resp : Response) : ControllerInterface
                 }
                 existingUniversity.toUniversity()
             } catch (e: Exception) {
-                e.printStackTrace()
+                SentryTurret.log {
+                    addTag("Hibernate", "")
+                    addTag("updateUniversity", "")
+                }.capture(e)
                 HttpStatus(500, "Could not update the Group")
             }
         }

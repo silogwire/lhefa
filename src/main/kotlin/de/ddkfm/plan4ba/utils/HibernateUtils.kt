@@ -1,5 +1,7 @@
 package de.ddkfm.plan4ba.utils
 
+import de.ddkfm.plan4ba.SentryTurret
+import de.ddkfm.plan4ba.capture
 import de.ddkfm.plan4ba.models.*
 import org.hibernate.Session
 import org.hibernate.SessionFactory
@@ -36,7 +38,9 @@ class HibernateUtils {
             try {
                 sessionFactory = configuration.buildSessionFactory()
             } catch (e: Exception) {
-                e.printStackTrace()
+                SentryTurret.log {
+                    addTag("Hibernate", "")
+                }.capture(e)
             }
             initDatabase()
         }
@@ -70,13 +74,9 @@ class HibernateUtils {
             val exam = ExamStats(1, 1, 0, 0, 0, 0, 0, 0)
             val hibernateExam = exam.toHibernateExamStat()
             val user = doInHibernate { it.find(HibernateUser::class.java, 1) }
-            //hibernateExam.user = user!!
-            println("vorher: $hibernateExam")
             doInHibernate { doInTransaction(it) { session ->
                 session.update(hibernateExam)
-                println("nachher1:$hibernateExam")
             } }
-            println("nachher:$hibernateExam")
 
         }
 
@@ -87,7 +87,9 @@ class HibernateUtils {
                     return func.invoke(session)
                 }
             } catch (e : Exception) {
-                e.printStackTrace()
+                SentryTurret.log {
+                    addTag("Hibernate", "")
+                }.capture(e)
             } finally {
                 session?.close()
             }
@@ -98,7 +100,9 @@ class HibernateUtils {
             try {
                 return func.invoke(session)
             } catch (e : Exception) {
-                e.printStackTrace()
+                SentryTurret.log {
+                    addTag("Hibernate", "")
+                }.capture(e)
                 transaction.rollback()
             } finally {
                 transaction.commit()
@@ -113,6 +117,9 @@ fun Session.doInTransaction(func : (session : Session) -> Any?) : Any?{
     try {
         return func.invoke(this)
     } catch (e : Exception) {
+        SentryTurret.log {
+            addTag("Hibernate", "")
+        }.capture(e)
         transaction.rollback()
         throw e
     } finally {

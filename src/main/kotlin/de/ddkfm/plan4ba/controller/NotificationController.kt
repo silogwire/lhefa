@@ -1,6 +1,8 @@
 package de.ddkfm.plan4ba.controller
 
+import de.ddkfm.plan4ba.SentryTurret
 import de.ddkfm.plan4ba.models.*
+import de.ddkfm.plan4ba.user
 import de.ddkfm.plan4ba.utils.*
 import io.swagger.annotations.*
 import org.hibernate.Hibernate
@@ -75,7 +77,11 @@ class NotificationController(req : Request, resp : Response) : ControllerInterfa
                             hibernateNotification.toNotification()
                         }
                     } catch (e : Exception) {
-                        e.printStackTrace()
+                        SentryTurret.log {
+                            addTag("Hibernate", "")
+                            addTag("createNotification", "")
+                            user(username = notification.userId.toString())
+                        }
                         HttpStatus(500, "Could not save the token")
                     }
                 }

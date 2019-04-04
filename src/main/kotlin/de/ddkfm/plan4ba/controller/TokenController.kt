@@ -1,6 +1,9 @@
 package de.ddkfm.plan4ba.controller
 
+import de.ddkfm.plan4ba.SentryTurret
+import de.ddkfm.plan4ba.capture
 import de.ddkfm.plan4ba.models.*
+import de.ddkfm.plan4ba.user
 import de.ddkfm.plan4ba.utils.*
 import io.swagger.annotations.*
 import org.hibernate.Hibernate
@@ -88,7 +91,11 @@ class TokenController(req : Request, resp : Response) : ControllerInterface(req 
                             hibernateToken.toToken()
                         }
                     } catch (e : Exception) {
-                        e.printStackTrace()
+                        SentryTurret.log {
+                            addTag("Hibernate", "")
+                            addTag("createToken", "")
+                            user(username = "${token.userId}")
+                        }.capture(e)
                         HttpStatus(500, "Could not save the token")
                     }
                 }

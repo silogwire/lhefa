@@ -1,5 +1,7 @@
 package de.ddkfm.plan4ba.controller
 
+import de.ddkfm.plan4ba.SentryTurret
+import de.ddkfm.plan4ba.capture
 import de.ddkfm.plan4ba.models.*
 import de.ddkfm.plan4ba.utils.*
 import io.swagger.annotations.*
@@ -71,7 +73,10 @@ class UserGroupController(req : Request, resp : Response) : ControllerInterface(
                     }
                     hibernateGroup.toUserGroup()
                 } catch (e : Exception) {
-                    e.printStackTrace()
+                    SentryTurret.log {
+                        addTag("Hibernate", "")
+                        addTag("createGroup", "")
+                    }.capture(e)
                     HttpStatus(500, "Could not save the group")
                 }
             }
@@ -107,7 +112,10 @@ class UserGroupController(req : Request, resp : Response) : ControllerInterface(
                 }
                 existingGroup.toUserGroup()
             } catch (e: Exception) {
-                e.printStackTrace()
+                SentryTurret.log {
+                    addTag("Hibernate", "")
+                    addTag("updateGroup", "")
+                }.capture(e)
                 HttpStatus(500, "Could not update the Group")
             }
         }

@@ -1,6 +1,9 @@
 package de.ddkfm.plan4ba.controller
 
+import de.ddkfm.plan4ba.SentryTurret
+import de.ddkfm.plan4ba.capture
 import de.ddkfm.plan4ba.models.*
+import de.ddkfm.plan4ba.user
 import de.ddkfm.plan4ba.utils.HibernateUtils
 import de.ddkfm.plan4ba.utils.doInTransaction
 import de.ddkfm.plan4ba.utils.toHibernateUser
@@ -94,7 +97,11 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
                     session.createQuery("From HibernateUser Where matriculationNumber = '${user.matriculationNumber}'", HibernateUser::class.java).list()
                             .first().toUser()
                 } catch (e : Exception) {
-                    e.printStackTrace()
+                    SentryTurret.log {
+                        addTag("Hibernate", "")
+                        addTag("createUser", "")
+                        user(username = user.matriculationNumber)
+                    }.capture(e)
                     session.transaction.rollback()
                     InternalServerError("Could not save the user")
                 }
@@ -138,7 +145,11 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
                 }
                 existingUser.toUser()
             } catch (e : Exception) {
-                e.printStackTrace()
+                SentryTurret.log {
+                    addTag("Hibernate", "")
+                    addTag("updateUser", "")
+                    user(username = user.matriculationNumber)
+                }.capture(e)
                 InternalServerError("Could not update the User")
             }
         }

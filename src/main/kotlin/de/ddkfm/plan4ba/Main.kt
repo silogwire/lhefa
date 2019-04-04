@@ -9,6 +9,8 @@ import de.ddkfm.plan4ba.models.InternalServerError
 import de.ddkfm.plan4ba.utils.HibernateUtils
 import de.ddkfm.plan4ba.utils.getEnvOrDefault
 import de.ddkfm.plan4ba.utils.mapDataTypes
+import de.ddkfm.plan4ba.utils.toJson
+import io.sentry.event.Event
 import io.swagger.annotations.*
 import org.apache.commons.io.IOUtils
 import org.reflections.Reflections
@@ -18,6 +20,7 @@ import spark.Spark.*
 import spark.debug.DebugScreen
 import spark.kotlin.port
 import java.lang.reflect.Method
+import java.net.InetAddress
 import javax.ws.rs.*
 
 fun main(args : Array<String>) {
@@ -58,6 +61,16 @@ fun main(args : Array<String>) {
         }
     }
     DebugScreen.enableDebugScreen()
+    val dsn = System.getenv("SENTRY_DSN")
+    dsn?.let {
+        println("DSN $dsn joined")
+        SentryTurret.log {
+            addTag("Service", "DBService")
+        }.event {
+            withMessage("DBService ${InetAddress.getLocalHost().hostName} joined")
+            withLevel(Event.Level.INFO)
+        }
+    }
 }
 
 fun invokeFunction(controller : Class<*>, method : Method, req : Request, resp : Response) : Any {
@@ -109,7 +122,9 @@ fun invokeFunction(controller : Class<*>, method : Method, req : Request, resp :
         var invokeResult = try {
             method.invoke(instance, *args.toTypedArray())
         } catch (e : Exception) {
-            e.printStackTrace()
+            SentryTurret.log {
+                addExtra("params", implicitParams.toJson())
+            }.capture(e)
             InternalServerError("a server error occured")
         }
 
