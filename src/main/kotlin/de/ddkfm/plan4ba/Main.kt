@@ -24,7 +24,7 @@ import java.net.InetAddress
 import javax.ws.rs.*
 
 fun main(args : Array<String>) {
-    port(8080)
+    port(System.getenv("HTTP_PORT")?.toIntOrNull() ?: 8080)
 
     var config = Config()
     config.buildFromEnv()
