@@ -2,13 +2,13 @@ package de.ddkfm.plan4ba.hardcoded
 
 import de.ddkfm.plan4ba.models.Food
 import de.ddkfm.plan4ba.models.Geo
+import kong.unirest.Unirest
+import org.json.JSONObject
 import org.jsoup.Jsoup
 import java.net.URL
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.util.*
 import kotlin.math.absoluteValue
 
 open class UniversityData {
@@ -40,8 +40,37 @@ open class UniversityData {
             else -> UniversityData()
         }
     }
+
+    fun cacheMealFromOpenMensa(id : Int, day : LocalDate) : List<Food> {
+        val dateString = "%d-%02d-%02d".format(day.year, day.monthValue, day.dayOfMonth)
+        val response = Unirest.get("https://openmensa.org/api/v2/canteens/$id/days/$dateString/meals")
+            .asJson().body.array
+        return response.map { meal ->
+            meal as JSONObject
+            val prices = meal.getJSONObject("prices")
+            var pricesString = "${prices.getDoubleOrDefault("students", 0.0)}€,"
+            pricesString += "${prices.getDoubleOrDefault("employees", 0.0)}€,"
+            pricesString += "${prices.getDoubleOrDefault("pupils", 0.0)}€,"
+            pricesString += "${prices.getDoubleOrDefault("others", 0.0)}€,"
+            val vegetarian = meal.has("notes") && meal.getJSONArray("notes").contains("vegetarisch")
+            val vegan = meal.has("notes") && meal.getJSONArray("notes").contains("vegan")
+            Food(
+                meal.getString("name"),
+                pricesString,
+                vegetarian,
+                vegan,
+                meal.getString("category")
+            )
+        }
+    }
 }
 
+fun JSONObject.getDoubleOrDefault(field : String, default : Double) : Double {
+    return if(this.isNull(field))
+        default
+    else
+        this.getDouble(field);
+}
 object BaLeipzig : UniversityData() {
     override var accentColor: String = "#309D4A"
     override var logo: String = "https://www.ba-leipzig.de/fileadmin/tmpl/daten/berufsakademie_sachsen/img/logo/ba_leipzig_logo.svg"
@@ -74,28 +103,7 @@ object BaLeipzig : UniversityData() {
 object BaDresden : UniversityData() {
     override var logo : String = ""
     override fun cacheMeal(day: LocalDate): List<Food> {
-        val now = LocalDate.now()
-        val beginOfWeek = now.minusDays(now.dayOfWeek.value - 1L)
-        val endOfWorkWeek = now.plusDays(5L - now.dayOfWeek.value)
-        val week = if(day in beginOfWeek..endOfWorkWeek) "" else "-w1"
-        val url = "https://www.studentenwerk-dresden.de/mensen/speiseplan/mensa-johannstadt.html$week"
-        val doc = Jsoup.parse(URL(url), 5000)
-        val meals = doc.getElementsByTag("article")
-        val dayFormatted = day.format(DateTimeFormatter.ofPattern("EEEE, d. MMMM yyyy", Locale.GERMAN))
-        return meals
-                .filter { it.select(".swdd-ueberschrift").html() == dayFormatted }
-                .map { element ->
-                    element.select(".swiper-slide").map { swiper ->
-                        val description = swiper.select(".flex-grow-1").text()
-                        val prices = swiper.select("strong").html()
-                        val vegetarian = swiper.select("img[alt=\"vegetarisch\"]").isNotEmpty()
-                        val vegan = swiper.select("img[alt=\"vegan\"]").isNotEmpty()
-                        if(description.isNullOrEmpty() ) null
-                        else Food(description, prices, vegetarian || vegan, vegan, "")
-                    }
-                }
-                .flatten()
-                .filterNotNull()
+        return cacheMealFromOpenMensa(87, day)
     }
 }
 
