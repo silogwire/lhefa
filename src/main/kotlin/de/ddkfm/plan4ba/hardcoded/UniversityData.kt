@@ -29,7 +29,6 @@ open class UniversityData {
         }
         return cachedMeals
     }
-    open fun getLocation() : Geo = Geo(0.0, 0.0)
     companion object {
         @JvmStatic
         fun getInstance(uni : String) : UniversityData = when(uni) {
@@ -96,8 +95,6 @@ object BaLeipzig : UniversityData() {
                     )
         }
     }
-
-    override fun getLocation(): Geo = Geo(51.310394, 12.303310)
 }
 
 object BaDresden : UniversityData() {
