@@ -72,12 +72,6 @@ class HibernateUtils {
                     session.update(link.copy(language = "de"))
                 } }
             }
-            val exam = ExamStats(1, 1, 0, 0, 0, 0, 0, 0)
-            val hibernateExam = exam.toHibernateExamStat()
-            val user = doInHibernate { it.find(HibernateUser::class.java, 1) }
-            doInHibernate { doInTransaction(it) { session ->
-                session.update(hibernateExam)
-            } }
 
         }
 

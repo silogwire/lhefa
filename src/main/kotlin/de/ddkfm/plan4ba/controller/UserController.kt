@@ -1,5 +1,7 @@
 package de.ddkfm.plan4ba.controller
 
+import de.ddkfm.plan4ba.SentryTurret
+import de.ddkfm.plan4ba.capture
 import de.ddkfm.plan4ba.models.*
 import de.ddkfm.plan4ba.utils.*
 import org.apache.commons.codec.digest.DigestUtils
@@ -80,23 +82,28 @@ class UserController(req : Request, resp : Response) : ControllerInterface(req =
     @Path("/:id")
     fun deleteUserData(passwordParam : PasswordParam,
                        @PathParam("id") id : Int) : OK {
-         val authenticated = this.authenticate(passwordParam, id)
-         if(authenticated == null)
-             throw Unauthorized()
+        val authenticated = this.authenticate(passwordParam, id) ?: throw Unauthorized()
         val hqlScripts = listOf(
             "DELETE From HibernateNotification Where user_id = $id",
             "DELETE From HibernateToken Where user_id = $id",
             "DELETE From HibernateLecture Where user_id = $id",
-            "DELETE From HibernateExamStats Where id = $id",
+            "DELETE From HibernateExamStats Where user_id = $id",
             "DELETE From HibernateUser Where id = $id"
         )
-        return inSession {
-            it.transaction { session ->
+        return inSession { session ->
+            val transaction = session.beginTransaction()
+            try {
                 val sumRowsDeleted = hqlScripts
                     .map(session::createQuery)
                     .map { it.executeUpdate() }
                     .sum()
                 OK("userdata was deleted")
+            } catch(e : Exception) {
+                transaction.rollback()
+                SentryTurret.log {
+                    addTag("Hibernate", "")
+                }.capture(e)
+                throw InternalServerError("userdata could not deleted")
             }
         } ?: throw InternalServerError("userdata could not deleted")
     }

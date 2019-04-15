@@ -102,17 +102,25 @@ fun invokeFunction(controller : Class<*>, method : Method, req : Request, resp :
         var invokeResult = try {
             method.invoke(instance, *args.toTypedArray())
         } catch (e : InvocationTargetException) {
-                if(e.cause is HttpStatus)
+                if(e.cause is HttpStatus) {
+                    if(e.cause is InternalServerError)
+                        SentryTurret.log {}.capture(e)
                     e.cause
-                else {
+                } else {
                     SentryTurret.log {
                         addExtra("params", params.toJson())
                     }.capture(e)
                     InternalServerError("a server error occured")
                 }
         }
-        if(invokeResult is HttpStatus)
+        if(invokeResult is HttpStatus) {
             resp.status(invokeResult.code)
+            return mapOf(
+                "code" to invokeResult.code,
+                "message" to invokeResult.message,
+                "customMessage" to invokeResult.message
+            ).toJson()
+        }
         return jacksonObjectMapper().writeValueAsString(invokeResult)
     }
 }

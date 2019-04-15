@@ -1,5 +1,7 @@
 package de.ddkfm.plan4ba.controller
 
+import de.ddkfm.plan4ba.SentryTurret
+import de.ddkfm.plan4ba.capture
 import de.ddkfm.plan4ba.models.*
 import de.ddkfm.plan4ba.utils.*
 import spark.Request
@@ -50,12 +52,20 @@ class NotificationController(req : Request, resp : Response) : ControllerInterfa
     @DELETE
     @Path("/:id")
     fun deleteNotification(@PathParam("id") id: Int) : OK {
-        return inSession {
-            it.transaction {session ->
+        return inSession {session ->
+            val transaction = session.beginTransaction()
+            try {
                 val affectedRows = session.createQuery("Delete From HibernateNotification WHERE id = $id")
                     .executeUpdate()
                 OK("affected rows: $affectedRows")
+            } catch (e : Exception) {
+                transaction.rollback()
+                SentryTurret.log {
+                    addTag("Hibernate", "")
+                }.capture(e)
+                throw InternalServerError("notification could not deleted")
             }
+
         } ?: throw InternalServerError("could not delete the notication")
     }
 }
