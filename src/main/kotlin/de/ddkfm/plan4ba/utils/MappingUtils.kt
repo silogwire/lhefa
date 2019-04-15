@@ -6,15 +6,15 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-fun mapDataTypes(pair : Pair<ApiImplicitParam, String>) : Any {
-    val returnValue = when(pair.first.dataType.toLowerCase()) {
-        "integer" -> pair.second.toIntOrNull()
-        "long" -> pair.second.toLongOrNull()
-        "boolean" -> pair.second.toBoolean()
-        "double" -> pair.second.toDoubleOrNull()
+fun mapDataTypes(pair : Pair<Class<*>, String?>) : Any? {
+    val returnValue = when(pair.first) {
+        Int::class.java -> pair.second?.toIntOrNull() ?: -1
+        Long::class.java -> pair.second?.toLongOrNull() ?: -1
+        Boolean::class.java -> pair.second?.toBoolean() ?: false
+        Double::class.java -> pair.second?.toDoubleOrNull() ?: -1
         else -> pair.second
-    }
-    return returnValue ?: getDefaultValue(pair.first.dataType.toLowerCase())
+    } ?: ""
+    return returnValue
 }
 
 fun getDefaultValue(type : String) : Any {
