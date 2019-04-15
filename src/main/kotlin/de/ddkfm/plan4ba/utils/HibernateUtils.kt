@@ -8,6 +8,7 @@ import org.hibernate.SessionFactory
 import org.hibernate.cfg.Configuration
 import org.hibernate.cfg.Environment
 import java.util.stream.Collectors
+import kotlin.reflect.KClass
 
 
 class HibernateUtils {
@@ -80,7 +81,7 @@ class HibernateUtils {
 
         }
 
-        fun <T> doInHibernate(func : (session : Session) -> T) : T? {
+        fun <T> doInHibernate(func : (session : Session) -> T?) : T? {
             var session = sessionFactory?.openSession()
             try {
                 if(session != null) {
@@ -90,10 +91,11 @@ class HibernateUtils {
                 SentryTurret.log {
                     addTag("Hibernate", "")
                 }.capture(e)
+                throw e
             } finally {
                 session?.close()
             }
-            return null
+            return null;
         }
         fun doInTransaction(session : Session, func : (session : Session) -> Any) : Any? {
             var transaction = session.beginTransaction()
@@ -112,7 +114,25 @@ class HibernateUtils {
     }
 }
 
-fun Session.doInTransaction(func : (session : Session) -> Any?) : Any?{
+infix fun Session.save(user : Any) {
+    this.transaction {
+        it.save(user)
+    }
+}
+
+infix fun Session.update(user : Any) {
+    this.transaction {
+        it.update(user)
+    }
+}
+
+infix fun Session.delete(user : Any) {
+    this.transaction {
+        it.update(user)
+    }
+}
+
+fun <T> Session.transaction(func : (session : Session) -> T?) : T?{
     var transaction = this.beginTransaction()
     try {
         return func.invoke(this)
@@ -126,4 +146,49 @@ fun Session.doInTransaction(func : (session : Session) -> Any?) : Any?{
         transaction.commit()
     }
     return null
+}
+
+infix fun String.eq(obj : Any) : Triple<String, String, Any> = Triple(this, "=", obj)
+infix fun String.lt(obj : Any) : Triple<String, String, Any> = Triple(this, "<", obj)
+infix fun String.gt(obj : Any) : Triple<String, String, Any> = Triple(this, ">", obj)
+
+class Where(val linkType : String = "and") {
+    private val criterias = mutableListOf<String>()
+    fun add(triple : Triple<String, String, Any>) : Where {
+        val criteria = "obj.${triple.first} ${triple.second} ${triple.third}"
+        criterias.add(criteria)
+        return this
+    }
+
+    override fun toString(): String {
+        return this.criterias.joinToString(separator = " $linkType ")
+    }
+    companion object {
+        fun or() : Where = Where(linkType = "or")
+        fun and() : Where = Where(linkType = "and")
+    }
+}
+
+inline fun <reified T> Session.single(id : Int) : T? {
+    return this.get(T::class.java, id)
+}
+inline fun <reified T> Session.list(where : String = "1=1") : List<T>? {
+    return this.createQuery("From ${T::class.java.simpleName} obj Where $where", T::class.java).list()
+}
+
+inline fun <reified T> Session.list(where : Where) :List<T>? {
+    val whereString = where.toString()
+    return this.list(whereString)
+}
+
+inline fun <reified T> single(id : Int) : T? {
+    return inSession { it.single<T>(id) }
+}
+
+inline fun <reified T> list(where : String) : List<T>? {
+    return inSession { it.list<T>(where) }
+}
+
+fun <T> inSession(lambda : (Session) -> T?) : T? {
+    return HibernateUtils.doInHibernate(lambda)
 }

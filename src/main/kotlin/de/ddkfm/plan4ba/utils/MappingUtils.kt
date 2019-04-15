@@ -1,24 +1,20 @@
 package de.ddkfm.plan4ba.utils
 
-import de.ddkfm.plan4ba.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import de.ddkfm.plan4ba.models.*
-import io.swagger.annotations.ApiImplicitParam
-import org.json.JSONObject
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.*
 
-fun mapDataTypes(pair : Pair<ApiImplicitParam, String>) : Any {
-    val returnValue = when(pair.first.dataType.toLowerCase()) {
-        "integer" -> pair.second.toIntOrNull()
-        "long" -> pair.second.toLongOrNull()
-        "boolean" -> pair.second.toBoolean()
-        "double" -> pair.second.toDoubleOrNull()
+fun mapDataTypes(pair : Pair<Class<*>, String?>) : Any? {
+    val returnValue = when(pair.first) {
+        Int::class.java -> pair.second?.toIntOrNull() ?: -1
+        Long::class.java -> pair.second?.toLongOrNull() ?: -1
+        Boolean::class.java -> pair.second?.toBoolean() ?: false
+        Double::class.java -> pair.second?.toDoubleOrNull() ?: -1
         else -> pair.second
-    }
-    return returnValue ?: getDefaultValue(pair.first.dataType.toLowerCase())
+    } ?: ""
+    return returnValue
 }
 
 fun getDefaultValue(type : String) : Any {
@@ -122,8 +118,11 @@ fun ExamStats.toHibernateExamStat() : HibernateExamStats {
 fun Any.toJson() : String {
     return jacksonObjectMapper().writeValueAsString(this)
 }
-fun <T> JSONObject.toModel(type : Class<T>) : T {
-    return jacksonObjectMapper().readValue(this.toString(), type)
+inline fun <reified T> String.toModel() : T? {
+    return  jacksonObjectMapper().readValue(this, T::class.java)
+}
+inline fun <reified T> String.toListModel() : List<T>? {
+    return  jacksonObjectMapper().readValue(this, jacksonObjectMapper().typeFactory.constructCollectionType(List::class.java, T::class.java))
 }
 
 fun LocalDateTime.toMillis() : Long {

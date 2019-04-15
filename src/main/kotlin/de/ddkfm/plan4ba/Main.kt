@@ -1,24 +1,17 @@
 package de.ddkfm.plan4ba
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import de.ddkfm.plan4ba.controller.SwaggerParser
-import de.ddkfm.plan4ba.models.BadRequest
-import de.ddkfm.plan4ba.models.Config
-import de.ddkfm.plan4ba.models.HttpStatus
-import de.ddkfm.plan4ba.models.InternalServerError
+import de.ddkfm.plan4ba.models.*
 import de.ddkfm.plan4ba.utils.HibernateUtils
-import de.ddkfm.plan4ba.utils.getEnvOrDefault
 import de.ddkfm.plan4ba.utils.mapDataTypes
 import de.ddkfm.plan4ba.utils.toJson
 import io.sentry.event.Event
-import io.swagger.annotations.*
-import org.apache.commons.io.IOUtils
 import org.reflections.Reflections
 import spark.Request
 import spark.Response
 import spark.Spark.*
-import spark.debug.DebugScreen
 import spark.kotlin.port
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.net.InetAddress
 import javax.ws.rs.*
@@ -32,10 +25,15 @@ fun main(args : Array<String>) {
     HibernateUtils.setUp(config.database)
     var reflections = Reflections("de.ddkfm.plan4ba.controller")
 
-    var controllers = reflections.getTypesAnnotatedWith(Api::class.java)
+    var controllers = reflections.getTypesAnnotatedWith(Path::class.java)
     for(controller in controllers) {
         path(controller.getAnnotation(Path::class.java).value) {
-            var methods = controller.declaredMethods.filter { it.isAnnotationPresent(ApiOperation::class.java) }
+            var methods = controller.declaredMethods.filter {
+                    it.isAnnotationPresent(GET::class.java) ||
+                    it.isAnnotationPresent(POST::class.java) ||
+                    it.isAnnotationPresent(PUT::class.java) ||
+                    it.isAnnotationPresent(DELETE::class.java)
+            }
             for(method in methods) {
                 if(method.isAnnotationPresent(GET::class.java))
                     get(method.getAnnotation(Path::class.java).value) {req, resp -> invokeFunction(controller, method, req, resp)}
@@ -51,16 +49,6 @@ fun main(args : Array<String>) {
             }
         }
     }
-    if(getEnvOrDefault("ENABLE_SWAGGER", "false").toBoolean()) {
-        var swaggerJson = SwaggerParser.getSwaggerJson("de.ddkfm.plan4ba.controller")
-
-        get("/swagger") { _,_-> swaggerJson }
-
-        get("/swagger/html") { _, resp ->
-            IOUtils.copy(SwaggerParser.javaClass.getResourceAsStream("/index.html"), resp.raw().outputStream)
-        }
-    }
-    DebugScreen.enableDebugScreen()
     val dsn = System.getenv("SENTRY_DSN")
     dsn?.let {
         println("DSN $dsn joined")
@@ -78,8 +66,8 @@ fun invokeFunction(controller : Class<*>, method : Method, req : Request, resp :
     resp.type("application/json")
     var args = mutableListOf<Any>()
     var bodyParam = method.parameters
-            .filter { it.isAnnotationPresent(ApiParam::class.java) }
-            .filter { !it.getAnnotation(ApiParam::class.java).hidden }
+        .filter { !it.isAnnotationPresent(QueryParam::class.java) }
+        .filter { !it.isAnnotationPresent(PathParam::class.java) }
             .firstOrNull()
     var badRequest = false
     if(bodyParam != null) {
@@ -97,38 +85,33 @@ fun invokeFunction(controller : Class<*>, method : Method, req : Request, resp :
         resp.status(400)
         return jacksonObjectMapper().writeValueAsString(BadRequest())
     } else {
-        var implicitParams = method.annotations
-                .filter { it is ApiImplicitParams || it is ApiImplicitParam }
-                .flatMap {
-                    if (it is ApiImplicitParams)
-                        it.value.toList()
-                    else
-                            listOf(it)
-                }
-                .map { it as ApiImplicitParam }
-                .map { param ->
-                    var value =
-                            if (param.paramType == "path") {
-                                req.params(param.name)
-                            } else {
-                                req.queryParams(param.name)
-                            } ?: ""
-                    param to value
-                }
-                .filter { it.second != null }
-                .map(::mapDataTypes)
-
-        args.addAll(implicitParams)
+        var params = method.parameters
+            .map { parameter ->
+                val pair = if(parameter.isAnnotationPresent(QueryParam::class.java)) {
+                    req.queryParams(parameter.getAnnotation(QueryParam::class.java).value)
+                } else if (parameter.isAnnotationPresent(PathParam::class.java)) {
+                    req.params(parameter.getAnnotation(PathParam::class.java).value)
+                } else NotFound()
+                if(pair is NotFound)
+                    null
+                else
+                    mapDataTypes(parameter.type!! to pair as String?)
+            }
+            .filterNotNull()
+        args.addAll(params)
         var invokeResult = try {
             method.invoke(instance, *args.toTypedArray())
-        } catch (e : Exception) {
-            SentryTurret.log {
-                addExtra("params", implicitParams.toJson())
-            }.capture(e)
-            InternalServerError("a server error occured")
+        } catch (e : InvocationTargetException) {
+                if(e.cause is HttpStatus)
+                    e.cause
+                else {
+                    SentryTurret.log {
+                        addExtra("params", params.toJson())
+                    }.capture(e)
+                    InternalServerError("a server error occured")
+                }
         }
-
-        if (invokeResult is HttpStatus)
+        if(invokeResult is HttpStatus)
             resp.status(invokeResult.code)
         return jacksonObjectMapper().writeValueAsString(invokeResult)
     }

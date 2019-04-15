@@ -2,8 +2,8 @@ package de.ddkfm.plan4ba.models
 
 open class HttpStatus(
         var code : Int,
-        var message : String
-)
+        override var message : String
+) : Exception(message)
 data class NotFound(var customMessage : String = "Not Found") : HttpStatus(code = 404, message = customMessage)
 data class Unauthorized(var customMessage : String = "Unauthorized") : HttpStatus(code = 401, message = customMessage)
 data class BadRequest(var customMessage : String = "Bad Request") : HttpStatus(code = 400, message = customMessage)
