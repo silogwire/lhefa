@@ -1,105 +1,50 @@
 package de.ddkfm.plan4ba.controller
 
-import de.ddkfm.plan4ba.SentryTurret
-import de.ddkfm.plan4ba.capture
 import de.ddkfm.plan4ba.models.*
-import de.ddkfm.plan4ba.user
 import de.ddkfm.plan4ba.utils.*
-import io.swagger.annotations.*
-import org.hibernate.Hibernate
 import spark.Request
 import spark.Response
-import java.util.stream.Collectors
 import javax.ws.rs.*
 
-@Api(value = "/tokens", description = "all operations about tokens")
 @Path("/tokens")
-@Produces("application/json")
 class TokenController(req : Request, resp : Response) : ControllerInterface(req = req, resp = resp) {
 
     @GET
-    @ApiOperation(value = "list all tokens", notes = "return all tokens")
-    @ApiResponses(
-            ApiResponse(code = 200, message = "successfull", response = Token::class, responseContainer = "List")
-    )
-    @ApiImplicitParams(
-            ApiImplicitParam(name = "userId", paramType = "query", dataType = "integer", required = false),
-            ApiImplicitParam(name = "valid", paramType = "query", dataType = "boolean", required = false),
-            ApiImplicitParam(name = "caldavToken", paramType = "query", dataType = "boolean", required = false),
-            ApiImplicitParam(name = "refreshToken", paramType = "query", dataType = "boolean", required = false)
-    )
-
     @Path("")
-    fun allTokens(@ApiParam(hidden = true) userId : Int,
-                  @ApiParam(hidden = true) valid : Boolean,
-                  @ApiParam(hidden = true) caldavToken : Boolean,
-                  @ApiParam(hidden = true) refreshToken : Boolean) : Any? = HibernateUtils.doInHibernate { session ->
-        var where = "WHERE 1=1"
+    fun allTokens(@QueryParam("userId") userId : Int,
+                  @QueryParam("valid") valid : Boolean,
+                  @QueryParam("caldavToken") caldavToken : Boolean,
+                  @QueryParam("refreshToken") refreshToken : Boolean) : List<Token>? {
+        var where = Where.and()
+            .add("isCalDavToken" eq caldavToken)
+            .add("isRefreshToken" eq refreshToken)
         if(userId != -1)
-            where += "AND user_id = $userId"
+            where = where.add("user.id" eq userId)
         if(valid)
-            where += "AND validTo > ${System.currentTimeMillis()}"
-        where += "AND isCalDavToken = $caldavToken"
-        where += " AND isRefreshToken = $refreshToken"
-        session.createQuery("From HibernateToken $where", HibernateToken::class.java).list()
-                .map { it.toToken() }
+            where = where.add("validTo" gt System.currentTimeMillis())
+        return inSession { it.list<HibernateToken>(where) }?.map { it.toToken() }
     }
 
     @GET
-    @ApiOperation(value = "get a specific token", notes = "get a specific token")
-    @ApiImplicitParam(name = "id", paramType = "path", dataType = "string")
-    @ApiResponses(
-            ApiResponse(code = 200, message = "successfull", response = Token::class),
-            ApiResponse(code = 404, response = NotFound::class, message = "Not Found")
-    )
     @Path("/:id")
-    fun getToken(@ApiParam(hidden = true) id : String) : Any? {
-        return HibernateUtils.doInHibernate { session ->
-            var token = session.createQuery("From HibernateToken Where token = '$id'", HibernateToken::class.java).uniqueResultOptional()
-            if(token.isPresent)
-                token.get().toToken()
-            else
-                NotFound()
-
-        }
+    fun getToken(@PathParam("id") id : String) : Token? {
+        val token = inSession { it.list<HibernateToken>("token='$id'") }?.firstOrNull()
+        if(token == null)
+            throw NotFound()
+        return token.toToken()
     }
 
     @PUT
-    @ApiOperation(value = "create a token")
     @Path("")
-    @ApiResponses(
-            ApiResponse(code = 201, message = "token created", response = Token::class),
-            ApiResponse(code = 409, message = "token already exists", response = AlreadyExists::class),
-            ApiResponse(code = 500, message = "Could not save the university", response = HttpStatus::class)
-    )
-    fun createToken(@ApiParam token : Token) : Any? {
-        return HibernateUtils.doInHibernate { session ->
-            val existingToken = session.find(HibernateToken::class.java, token.token)
-
-            if(existingToken != null)
-                AlreadyExists("token already exists")
-            else {
-
-                val user = session.find(HibernateUser::class.java, token.userId)
-                if(user == null)
-                    BadRequest("user does not exist")
-                else {
-                    val hibernateToken = HibernateToken(token.token, user, token.isCalDavToken, token.isRefreshToken, token.validTo)
-                    try {
-                        session.doInTransaction {
-                            session.persist(hibernateToken)
-                            hibernateToken.toToken()
-                        }
-                    } catch (e : Exception) {
-                        SentryTurret.log {
-                            addTag("Hibernate", "")
-                            addTag("createToken", "")
-                            user(username = "${token.userId}")
-                        }.capture(e)
-                        HttpStatus(500, "Could not save the token")
-                    }
-                }
-            }
-        }
+    fun createToken(token : Token) : Token? {
+        val existingToken = inSession { it.list<HibernateToken>("token='${token.token}'") }?.firstOrNull()
+        if(existingToken != null)
+            throw AlreadyExists("token already exists")
+        val user = inSession { it.single<HibernateUser>(token.userId) }
+        if(user == null)
+            throw BadRequest("user does not exist")
+        val hibernateToken = HibernateToken(token.token, user, token.isCalDavToken, token.isRefreshToken, token.validTo)
+        inSession { session -> session save hibernateToken }
+        return hibernateToken.toToken()
     }
 }

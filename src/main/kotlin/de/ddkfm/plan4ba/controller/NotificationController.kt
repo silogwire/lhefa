@@ -1,107 +1,61 @@
 package de.ddkfm.plan4ba.controller
 
-import de.ddkfm.plan4ba.SentryTurret
 import de.ddkfm.plan4ba.models.*
-import de.ddkfm.plan4ba.user
 import de.ddkfm.plan4ba.utils.*
-import io.swagger.annotations.*
-import org.hibernate.Hibernate
 import spark.Request
 import spark.Response
-import java.util.stream.Collectors
 import javax.ws.rs.*
 
-@Api(value = "/notifications", description = "all operations about notifications")
 @Path("/notifications")
-@Produces("application/json")
 class NotificationController(req : Request, resp : Response) : ControllerInterface(req = req, resp = resp) {
 
     @GET
-    @ApiOperation(value = "list all notifications", notes = "return all notifications")
-    @ApiResponses(
-            ApiResponse(code = 200, message = "successfull", response = Notification::class, responseContainer = "List")
-    )
-    @ApiImplicitParams(
-            ApiImplicitParam(name = "userId", paramType = "query", dataType = "integer", required = false)
-    )
-
     @Path("")
-    fun allNotifications(@ApiParam(hidden = true) userId : Int) : Any? = HibernateUtils.doInHibernate { session ->
-        var where = "WHERE 1=1"
-        if(userId != -1)
-            where += "AND user_id = $userId"
-        session.createQuery("From HibernateNotification $where", HibernateNotification::class.java).list()
-                .map { it.toNotification() }
+    fun allNotifications(@QueryParam("userId") userId : Int) : List<Notification>? {
+        val where = if(userId != -1) "user_id = $userId" else "1=1"
+        return inSession { it.list<HibernateNotification>(where) }?.map { it.toNotification() }
     }
 
     @GET
-    @ApiOperation(value = "get a specific notification", notes = "get a specific notification")
-    @ApiImplicitParam(name = "id", paramType = "path", dataType = "integer")
-    @ApiResponses(
-            ApiResponse(code = 200, message = "successfull", response = Notification::class),
-            ApiResponse(code = 404, response = NotFound::class, message = "Not Found")
-    )
     @Path("/:id")
-    fun getNotifcation(@ApiParam(hidden = true) id : Int) : Any? {
-        return HibernateUtils.doInHibernate { session ->
-            var notification = session.find(HibernateNotification::class.java, id)
-            notification?.toNotification() ?: NotFound()
-
-        }
+    fun getNotifcation(@PathParam("id") id : Int) : Notification {
+        var notification = inSession { it.single<HibernateNotification>(id) }
+        return notification?.toNotification() ?: throw NotFound()
     }
 
     @PUT
-    @ApiOperation(value = "create a notification")
     @Path("")
-    @ApiResponses(
-            ApiResponse(code = 201, message = "notification created", response = Notification::class),
-            ApiResponse(code = 409, message = "notification already exists", response = AlreadyExists::class),
-            ApiResponse(code = 500, message = "Could not save the notification", response = HttpStatus::class)
-    )
-    fun createNotification(@ApiParam notification : Notification) : Any? {
-        return HibernateUtils.doInHibernate { session ->
-            val existingNotification = session.createQuery("From HibernateNotification Where user_id = ${notification.userId} AND label = '${notification.label}'",HibernateNotification::class.java).list().firstOrNull()
-
-            if(existingNotification != null)
-                AlreadyExists("notification already exists")
-            else {
-
-                val user = session.find(HibernateUser::class.java, notification.userId)
-                if(user == null)
-                    BadRequest("user does not exist")
-                else {
-                    val hibernateNotification = HibernateNotification(0, notification.label, notification.description,  notification.type, /*notification.viewed, notification.data?.toJson(),*/ user)
-                    try {
-                        session.doInTransaction {
-                            session.persist(hibernateNotification)
-                            hibernateNotification.toNotification()
-                        }
-                    } catch (e : Exception) {
-                        SentryTurret.log {
-                            addTag("Hibernate", "")
-                            addTag("createNotification", "")
-                            user(username = notification.userId.toString())
-                        }
-                        HttpStatus(500, "Could not save the token")
-                    }
-                }
+    fun createNotification(notification : Notification) : Notification {
+        val existingNotification = inSession {
+            it.list<HibernateNotification>("user_id = ${notification.userId} AND label = '${notification.label}'")
+        }?.firstOrNull()
+        if(existingNotification != null)
+            throw AlreadyExists("notification already exists")
+        else {
+            val user = inSession { it.single<HibernateUser>(notification.userId) } ?: throw BadRequest("user does not exist")
+            val hibernateNotification = HibernateNotification(0,
+                notification.label,
+                notification.description,
+                notification.type,
+                user
+            )
+            inSession { session ->
+                session save hibernateNotification
             }
+            return hibernateNotification.toNotification()
+
         }
     }
 
     @DELETE
-    @ApiOperation(value = "delete a notification")
-    @ApiResponses(
-            ApiResponse(code = 200, message = "successfull", response = OK::class)
-    )
-    @ApiImplicitParam(name = "id", paramType = "path", dataType = "integer")
     @Path("/:id")
-    fun deleteNotification(@ApiParam(hidden = true) id: Int) : Any? = HibernateUtils.doInHibernate { session ->
-        session.doInTransaction {
-            val affectedRows = session.createQuery("Delete From HibernateNotification WHERE id = $id")
+    fun deleteNotification(@PathParam("id") id: Int) : OK {
+        return inSession {
+            it.transaction {session ->
+                val affectedRows = session.createQuery("Delete From HibernateNotification WHERE id = $id")
                     .executeUpdate()
-            OK("affected rows: $affectedRows")
-        }
-
+                OK("affected rows: $affectedRows")
+            }
+        } ?: throw InternalServerError("could not delete the notication")
     }
 }
