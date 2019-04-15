@@ -1,14 +1,10 @@
 package de.ddkfm.plan4ba.utils
 
-import de.ddkfm.plan4ba.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import de.ddkfm.plan4ba.models.*
-import io.swagger.annotations.ApiImplicitParam
-import org.json.JSONObject
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.*
 
 fun mapDataTypes(pair : Pair<ApiImplicitParam, String>) : Any {
     val returnValue = when(pair.first.dataType.toLowerCase()) {
@@ -122,8 +118,11 @@ fun ExamStats.toHibernateExamStat() : HibernateExamStats {
 fun Any.toJson() : String {
     return jacksonObjectMapper().writeValueAsString(this)
 }
-fun <T> JSONObject.toModel(type : Class<T>) : T {
-    return jacksonObjectMapper().readValue(this.toString(), type)
+inline fun <reified T> String.toModel() : T? {
+    return  jacksonObjectMapper().readValue(this, T::class.java)
+}
+inline fun <reified T> String.toListModel() : List<T>? {
+    return  jacksonObjectMapper().readValue(this, jacksonObjectMapper().typeFactory.constructCollectionType(List::class.java, T::class.java))
 }
 
 fun LocalDateTime.toMillis() : Long {
