@@ -31,7 +31,7 @@ class UserGroupController(req: Request, resp: Response) : ControllerInterface(re
     @PUT
     @Path("")
     fun createGroup(group: UserGroup): UserGroup {
-        val existingGroups = list<HibernateUserGroup>("uid = '${group.uid}'")
+        val existingGroups = inSession { it.list<HibernateUserGroup>("uid = '${group.uid}'") }
         if (existingGroups == null || existingGroups.isNotEmpty())
             throw AlreadyExists("Group already exists")
         inSession { session ->

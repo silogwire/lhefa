@@ -14,7 +14,7 @@ class InfoController(req : Request, resp : Response) : ControllerInterface(req =
     @GET
     @Path("")
     fun getAllInfos(@QueryParam("key") key : String) : List<Infotext> {
-        val texts = HibernateUtils.doInHibernate { session ->
+            val texts = HibernateUtils.doInHibernate { session ->
             val where = if(key.isNotEmpty()) "key = '$key'" else "1=1"
             val texts = session.list<HibernateInfotext>(where)
                 ?.map { it.toInfotext() }

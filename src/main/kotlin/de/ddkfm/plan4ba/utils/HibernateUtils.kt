@@ -175,14 +175,6 @@ inline fun <reified T> Session.list(where : Where) :List<T>? {
     return this.list(whereString)
 }
 
-inline fun <reified T> single(id : Int) : T? {
-    return inSession { it.single<T>(id) }
-}
-
-inline fun <reified T> list(where : String) : List<T>? {
-    return inSession { it.list<T>(where) }
-}
-
 fun <T> inSession(lambda : (Session) -> T?) : T? {
     return HibernateUtils.doInHibernate(lambda)
 }

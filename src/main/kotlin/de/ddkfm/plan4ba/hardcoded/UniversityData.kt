@@ -1,7 +1,6 @@
 package de.ddkfm.plan4ba.hardcoded
 
 import de.ddkfm.plan4ba.models.Food
-import de.ddkfm.plan4ba.models.Geo
 import kong.unirest.Unirest
 import org.json.JSONObject
 import org.jsoup.Jsoup

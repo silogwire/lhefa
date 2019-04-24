@@ -65,20 +65,11 @@ data class Lecture(
         var userId : Int
 )
 
-data class Geo(
-        var longitude : Double,
-        var latitude : Double
-)
-
 data class Infotext(
         var id : Int,
         var key : String,
         var description: String,
         var language : String
-)
-data class NotificationData(
-        var type : String,
-        var id : Int
 )
 
 data class Notification(
@@ -86,8 +77,6 @@ data class Notification(
         var label : String,
         var description : String,
         var type : String,
-        /*var viewed : Boolean,
-        var data : NotificationData?,*/
         var userId : Int
 )
 
