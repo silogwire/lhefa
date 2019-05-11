@@ -1,6 +1,8 @@
 package de.ddkfm.plan4ba.controller
 
 import de.ddkfm.plan4ba.models.*
+import de.ddkfm.plan4ba.models.database.HibernateLecture
+import de.ddkfm.plan4ba.models.database.HibernateUser
 import de.ddkfm.plan4ba.utils.*
 import spark.Request
 import spark.Response
@@ -16,7 +18,7 @@ class LectureController(req : Request, resp : Response) : ControllerInterface(re
             var where = "1=1"
             if(userId != -1)
                 where += "AND user_id = $userId"
-            val lectures = session.list<HibernateLecture>(where)?.map { it.toLecture() }
+            val lectures = session.list<HibernateLecture>(where)?.map { it.toModel() }
             if(userId != -1) {
                 val user = session.single<HibernateUser>(userId)
                 if(user != null) {
@@ -48,37 +50,17 @@ class LectureController(req : Request, resp : Response) : ControllerInterface(re
         return if(lecture == null || (userId != -1 && lecture.user.id != userId))
             throw NotFound()
         else
-            lecture.toLecture()
+            lecture.toModel()
     }
 
     @PUT
     @Path("")
     fun createLecture(lecture : Lecture) : Lecture? {
-        val existingLecture = inSession { session ->
-            session.list<HibernateLecture>(Where.and()
-                .add("title" eq "'${lecture.title}'")
-                .add("start" eq "${lecture.start}")
-                .add("end" eq "${lecture.end}")
-                .add("user.id" eq lecture.userId)
-            )
-        }?.firstOrNull()
-        if(existingLecture != null)
-            throw AlreadyExists("Lecture already exists")
-        else {
-            inSession {session ->
-                session save lecture.toHibernateLecture()
-            }
-            val insertedLecture = inSession { it.list<HibernateLecture>(Where.and()
-                .add("title" eq "'${lecture.title}'")
-                .add("start" eq "${lecture.start}")
-                .add("end" eq "${lecture.end}")
-                //.add("user_id" eq lecture.userId)
-            )
-            }?.firstOrNull()
-            if(insertedLecture == null)
-                throw InternalServerError("could not save the lecture")
-            return insertedLecture?.toLecture()
+        val hibernateLecture = lecture.toHibernate<HibernateLecture>()
+        inSession {session ->
+            session save hibernateLecture
         }
+        return hibernateLecture.toModel()
     }
 
     @POST
@@ -88,26 +70,28 @@ class LectureController(req : Request, resp : Response) : ControllerInterface(re
         val existingLecture = inSession { it.single<HibernateLecture>(id) }
         if(existingLecture == null)
             throw NotFound("Lecture does not exist")
-        existingLecture.allDay = lecture.allDay
-        existingLecture.color = lecture.color
-        existingLecture.description = lecture.description
-        existingLecture.start = lecture.start
-        existingLecture.end = lecture.end
-        existingLecture.exam = lecture.exam
-        existingLecture.instructor = lecture.instructor
-        existingLecture.remarks = lecture.remarks
-        existingLecture.room = lecture.room
-        existingLecture.sroom = lecture.sroom
-        existingLecture.title = lecture.title
+        existingLecture.apply {
+            allDay = lecture.allDay
+            color = lecture.color
+            description = lecture.description
+            start = lecture.start
+            end = lecture.end
+            exam = lecture.exam
+            instructor = lecture.instructor
+            remarks = lecture.remarks
+            room = lecture.room
+            sroom = lecture.sroom
+            title = lecture.title
+            deprecated = lecture.deprecated
+        }
 
         val user = inSession { it.single<HibernateUser>(lecture.userId) }
-        if(user == null)
-            throw NotFound("user with id ${lecture.userId} does not exist")
+            ?: throw NotFound("user with id ${lecture.userId} does not exist")
         existingLecture.user = user
 
         inSession { session ->
             session update existingLecture
         }
-        return existingLecture.toLecture()
+        return existingLecture.toModel()
     }
 }

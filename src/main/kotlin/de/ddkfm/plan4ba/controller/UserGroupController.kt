@@ -1,8 +1,7 @@
 package de.ddkfm.plan4ba.controller
 
-import de.ddkfm.plan4ba.SentryTurret
-import de.ddkfm.plan4ba.capture
 import de.ddkfm.plan4ba.models.*
+import de.ddkfm.plan4ba.models.database.HibernateUserGroup
 import de.ddkfm.plan4ba.utils.*
 import spark.Request
 import spark.Response
@@ -18,14 +17,14 @@ class UserGroupController(req: Request, resp: Response) : ControllerInterface(re
     ): List<UserGroup> {
         val uidString = if(uid.isNotEmpty()) "uid = '$uid'" else "1=1"
         val groups = inSession { it.list<HibernateUserGroup>(uidString) }
-        return groups?.map { it.toUserGroup() } ?: emptyList()
+        return groups?.map { it.toModel() } ?: emptyList()
     }
 
     @GET
     @Path("/:id")
     fun getGroup(@PathParam("id") id: Int): UserGroup {
-        var group = inSession { it.single<HibernateUserGroup>(id) }
-        return group?.toUserGroup() ?: throw NotFound()
+        val group = inSession { it.single<HibernateUserGroup>(id) }
+        return group?.toModel() ?: throw NotFound()
     }
 
     @PUT
@@ -35,7 +34,7 @@ class UserGroupController(req: Request, resp: Response) : ControllerInterface(re
         if (existingGroups == null || existingGroups.isNotEmpty())
             throw AlreadyExists("Group already exists")
         inSession { session ->
-            session save group.toHibernateUserGroup()
+            session save group.toHibernate<HibernateUserGroup>()
         }
         return group
     }

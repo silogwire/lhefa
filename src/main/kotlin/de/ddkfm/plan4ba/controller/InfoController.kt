@@ -1,6 +1,7 @@
 package de.ddkfm.plan4ba.controller
 
 import de.ddkfm.plan4ba.models.*
+import de.ddkfm.plan4ba.models.database.HibernateInfotext
 import de.ddkfm.plan4ba.utils.HibernateUtils
 import de.ddkfm.plan4ba.utils.single
 import de.ddkfm.plan4ba.utils.list
@@ -17,7 +18,7 @@ class InfoController(req : Request, resp : Response) : ControllerInterface(req =
             val texts = HibernateUtils.doInHibernate { session ->
             val where = if(key.isNotEmpty()) "key = '$key'" else "1=1"
             val texts = session.list<HibernateInfotext>(where)
-                ?.map { it.toInfotext() }
+                ?.map { it.toModel()}
             texts
         }
         return texts ?: emptyList()
@@ -28,7 +29,7 @@ class InfoController(req : Request, resp : Response) : ControllerInterface(req =
     fun getInfo(@PathParam("id") id : Int) : Infotext? {
         return HibernateUtils.doInHibernate { session ->
             val info = session.single<HibernateInfotext>(id)
-            info?.toInfotext()
+            info?.toModel()
         } ?: throw NotFound()
     }
 }

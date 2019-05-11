@@ -2,6 +2,7 @@ package de.ddkfm.plan4ba.controller
 
 import de.ddkfm.plan4ba.hardcoded.UniversityData
 import de.ddkfm.plan4ba.models.*
+import de.ddkfm.plan4ba.models.database.HibernateUniversity
 import de.ddkfm.plan4ba.utils.*
 import spark.Request
 import spark.Response
@@ -18,7 +19,7 @@ class UniversityController(req : Request, resp : Response) : ControllerInterface
     fun allUniversities(@QueryParam("name") name : String) : List<University>? {
         val where = if(name.isNotEmpty()) "name = '$name'" else "1=1"
         val universities = inSession { it.list<HibernateUniversity>(where) }
-        return universities?.map { it.toUniversity() }
+        return universities?.map { it.toModel() }
     }
 
     @GET
@@ -27,7 +28,7 @@ class UniversityController(req : Request, resp : Response) : ControllerInterface
         val uni = inSession { it.single<HibernateUniversity>(id) }
         if(uni == null)
             throw NotFound()
-        return uni.toUniversity()
+        return uni.toModel()
     }
 
     @GET
@@ -65,7 +66,7 @@ class UniversityController(req : Request, resp : Response) : ControllerInterface
         inSession { session ->
             session save hibernateUniversity
         }
-        return hibernateUniversity.toUniversity()
+        return hibernateUniversity.toModel()
     }
 }
 

@@ -1,6 +1,8 @@
 package de.ddkfm.plan4ba.controller
 
 import de.ddkfm.plan4ba.models.*
+import de.ddkfm.plan4ba.models.database.HibernateToken
+import de.ddkfm.plan4ba.models.database.HibernateUser
 import de.ddkfm.plan4ba.utils.*
 import spark.Request
 import spark.Response
@@ -22,7 +24,7 @@ class TokenController(req : Request, resp : Response) : ControllerInterface(req 
             where = where.add("user.id" eq userId)
         if(valid)
             where = where.add("validTo" gt System.currentTimeMillis())
-        return inSession { it.list<HibernateToken>(where) }?.map { it.toToken() }
+        return inSession { it.list<HibernateToken>(where) }?.map { it.toModel() }
     }
 
     @GET
@@ -31,7 +33,7 @@ class TokenController(req : Request, resp : Response) : ControllerInterface(req 
         val token = inSession { it.list<HibernateToken>("token='$id'") }?.firstOrNull()
         if(token == null)
             throw NotFound()
-        return token.toToken()
+        return token.toModel()
     }
 
     @PUT
@@ -41,10 +43,9 @@ class TokenController(req : Request, resp : Response) : ControllerInterface(req 
         if(existingToken != null)
             throw AlreadyExists("token already exists")
         val user = inSession { it.single<HibernateUser>(token.userId) }
-        if(user == null)
-            throw BadRequest("user does not exist")
+            ?: throw BadRequest("user does not exist")
         val hibernateToken = HibernateToken(token.token, user, token.isCalDavToken, token.isRefreshToken, token.validTo)
         inSession { session -> session save hibernateToken }
-        return hibernateToken.toToken()
+        return hibernateToken.toModel()
     }
 }
