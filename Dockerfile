@@ -1,4 +1,4 @@
-FROM library/openjdk:11-jre
+FROM library/openjdk:12
 ARG DBSERVICE_VERSION=1.9
 
 COPY target/DBService-${DBSERVICE_VERSION}-jar-with-dependencies.jar /app/DBService.jar
