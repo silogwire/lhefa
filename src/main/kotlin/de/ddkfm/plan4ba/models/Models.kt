@@ -1,6 +1,6 @@
 package de.ddkfm.plan4ba.models
 
-import javax.persistence.*
+
 
 data class User(
         var id: Int,
@@ -9,7 +9,9 @@ data class User(
         var password : String,
         var groupId : Int,
         var lastLecturePolling : Long,
-        var lastLectureCall : Long
+        var lastLectureCall : Long,
+        var storeExamsStats : Boolean = false,
+        var storeReminders : Boolean = false
 )
 
 
@@ -62,7 +64,8 @@ data class Lecture(
         var instructor : String,
         var remarks : String,
         var exam : Boolean,
-        var userId : Int
+        var userId : Int,
+        var deprecated : Boolean = false
 )
 
 data class Infotext(
@@ -74,10 +77,24 @@ data class Infotext(
 
 data class Notification(
         var id : Int,
-        var label : String,
-        var description : String,
         var type : String,
-        var userId : Int
+        var userId : Int,
+        var versionId : Int?
+)
+data class NotificationTranslation(
+    var id : Int,
+    var type : String,
+    var language : String,
+    var label : String,
+    var description : String
+)
+
+
+data class LectureChange(
+    var id : Int,
+    var notificationId : Int,
+    var old : Int?,
+    var new : Int?
 )
 
 data class Link(
@@ -89,7 +106,7 @@ data class Link(
         var language : String
 )
 
-data class ExamStats(
+data class ExamStat(
         var id : Int,
         var userId : Int,
         var booked : Int,
@@ -97,5 +114,56 @@ data class ExamStats(
         var failure : Int,
         var mbooked : Int,
         var modules : Int,
-        var success : Int
+        var success : Int,
+        var creditpoints : Int
+)
+
+data class AppVersion(
+    var id : Int,
+    var version : String,
+    var timestamp : Long
+)
+
+data class UserAppVersion(
+    var id : Int,
+    var versionId : Int,
+    var userId : Int
+)
+
+data class AppChange(
+    var id : Int,
+    var appVersion : Int,
+    var description: String,
+    var path : String
+)
+
+data class LatestExamResult(
+    var id : Int,
+    var reminderId : Int,
+    var grade: Double,
+    var agrDate : Long,
+    var status : String,
+    var title : String,
+    var shortTitle : String,
+    var type : String
+)
+
+data class Reminder(
+    var id : Int,
+    var userId : Int,
+    var semester : Int,
+    var exams: Int,
+    var electives : Int
+)
+
+data class Upcoming(
+    var id : Int,
+    var reminderId : Int,
+    var begin : Long,
+    var end : Long,
+    var shortTitle : String,
+    var title : String,
+    var room : String,
+    var instructor : String,
+    var comment : String
 )
