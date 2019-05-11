@@ -112,7 +112,7 @@ infix fun Session.save(user : Any) {
     }
 }
 
-infix fun Session.update(user : Any) {
+infix fun Session.update(user : Model<*>) {
     this.transaction {
         it.update(user)
     }
@@ -176,3 +176,4 @@ inline fun <reified T> Session.list(where : Where) :List<T>? {
 fun <T> inSession(lambda : (Session) -> T?) : T? {
     return HibernateUtils.doInHibernate(lambda)
 }
+
