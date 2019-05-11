@@ -2,13 +2,15 @@ package de.ddkfm.plan4ba.utils
 
 import de.ddkfm.plan4ba.SentryTurret
 import de.ddkfm.plan4ba.capture
-import de.ddkfm.plan4ba.models.*
+import de.ddkfm.plan4ba.models.DatabaseConfig
+import de.ddkfm.plan4ba.models.Model
+import de.ddkfm.plan4ba.models.database.HibernateInfotext
+import de.ddkfm.plan4ba.models.database.HibernateLink
 import org.hibernate.Session
 import org.hibernate.SessionFactory
 import org.hibernate.cfg.Configuration
 import org.hibernate.cfg.Environment
-import java.util.stream.Collectors
-import kotlin.reflect.KClass
+import org.reflections.Reflections
 
 
 class HibernateUtils {
@@ -25,15 +27,11 @@ class HibernateUtils {
             configuration.setProperty(Environment.HBM2DDL_AUTO, "update")
             configuration.setProperty(Environment.SHOW_SQL, getEnvOrDefault("SHOW_SQL", "false"))
 
-            configuration.addAnnotatedClass(HibernateUniversity::class.java)
-            configuration.addAnnotatedClass(HibernateUserGroup::class.java)
-            configuration.addAnnotatedClass(HibernateUser::class.java)
-            configuration.addAnnotatedClass(HibernateLecture::class.java)
-            configuration.addAnnotatedClass(HibernateToken::class.java)
-            configuration.addAnnotatedClass(HibernateInfotext::class.java)
-            configuration.addAnnotatedClass(HibernateNotification::class.java)
-            configuration.addAnnotatedClass(HibernateLink::class.java)
-            configuration.addAnnotatedClass(HibernateExamStats::class.java)
+
+            var reflections = Reflections("de.ddkfm.plan4ba.models.database")
+
+            var databaseTypes = reflections.getSubTypesOf(Model::class.java)
+            databaseTypes.forEach { model -> configuration.addAnnotatedClass(model) }
 
 
             try {
