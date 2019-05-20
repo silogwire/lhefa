@@ -135,7 +135,8 @@ object LectureChangeConverter : ModelConverter<LectureChange, HibernateLectureCh
                     lastLecturePolling = 0,
                     lastLectureCall = 0
                 ),
-                version = null
+                version = null,
+                timestamp = 0
             ),
             if (model.old != null)
                 HibernateLecture(
@@ -206,7 +207,8 @@ object NotificationConverter : ModelConverter<Notification, HibernateNotificatio
                 lastLecturePolling = 0,
                 lastLectureCall = 0
             ),
-            version = model.versionId?.let { HibernateAppVersion(it, "", 0) }
+            version = model.versionId?.let { HibernateAppVersion(it, "", 0, ""  ) },
+            timestamp = model.timestamp
         )
     }
 }
