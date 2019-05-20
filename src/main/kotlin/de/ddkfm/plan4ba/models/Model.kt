@@ -7,7 +7,6 @@ interface Model<T> {
 fun <U : Model<*>> Any.toHibernate() : U {
     val converter = when(this) {
         is User -> UserConverter
-        is AppChange -> AppChangeConverter
         is AppVersion -> AppVersionConverter
         is ExamStat -> ExamStatConverter
         is LatestExamResult -> LatestExamResultConverter

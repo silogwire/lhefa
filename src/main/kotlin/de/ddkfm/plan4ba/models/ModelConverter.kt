@@ -23,17 +23,6 @@ object UserConverter : ModelConverter<User, HibernateUser> {
         )
     }
 }
-
-object AppChangeConverter : ModelConverter<AppChange, HibernateAppChange> {
-    override fun convert(model: AppChange): HibernateAppChange {
-        return HibernateAppChange(
-            model.id,
-            HibernateAppVersion(model.appVersion,"", 0),
-            model.description,
-            model.path
-        )
-    }
-}
 object AppVersionConverter : ModelConverter<AppVersion, HibernateAppVersion> {
     override fun convert(model: AppVersion): HibernateAppVersion {
         return HibernateAppVersion(

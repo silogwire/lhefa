@@ -130,13 +130,6 @@ data class UserAppVersion(
     var userId : Int
 )
 
-data class AppChange(
-    var id : Int,
-    var appVersion : Int,
-    var description: String,
-    var path : String
-)
-
 data class LatestExamResult(
     var id : Int,
     var reminderId : Int,
