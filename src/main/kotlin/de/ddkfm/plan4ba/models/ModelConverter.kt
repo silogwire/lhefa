@@ -28,7 +28,8 @@ object AppVersionConverter : ModelConverter<AppVersion, HibernateAppVersion> {
         return HibernateAppVersion(
             model.id,
             model.version,
-            model.timestamp
+            model.timestamp,
+            model.description
         )
     }
 }
