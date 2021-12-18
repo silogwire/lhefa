@@ -1,6 +1,6 @@
 # DBService
 Microservice to interact with a database(usually PostgreSQL) and map SQL-Tables to a REST-Webservice
-## deployment
+## deployment //
 ### requirements
 - Docker (Linux Kernel 3.10 oder Hyper-V Virtualization under Windows)[https://docs.docker.com/install/]
 - recommendation: docker-compose[https://docs.docker.com/compose/install/]
